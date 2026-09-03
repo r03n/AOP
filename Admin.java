@@ -3,29 +3,34 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Admin extends User {
-    public Admin(int id, String username) { super(id, username, "Admin"); }
+    
+    public Admin(int id, String username) { 
+        super(id, username, "Admin"); 
+    }
 
-    // POLYMORPHISM IN ACTION
     @Override
     public String getRoleDescription() { 
         return "Has full system access and user management."; 
     }
 
-    public String createEvent(String title, String desc, String date, int capacity) {
-        String sql = "INSERT INTO Events(title, description, event_date, capacity, organizer_id) VALUES(?, ?, ?, ?, ?)";
+    // --- EVENT MANAGEMENT (Global Access) ---
+    public String createEvent(String title, String description, String date, String time, int capacity) {
+        String sql = "INSERT INTO Events(title, description, event_date, event_time, capacity, organizer_id) VALUES(?, ?, ?, ?, ?, ?)";
         try (Connection conn = DatabaseManager.connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, title); pstmt.setString(2, desc); pstmt.setString(3, date); 
-            pstmt.setInt(4, capacity); pstmt.setInt(5, this.id);
+            pstmt.setString(1, title); pstmt.setString(2, description); 
+            pstmt.setString(3, date); pstmt.setString(4, time);
+            pstmt.setInt(5, capacity); pstmt.setInt(6, this.id);
             pstmt.executeUpdate();
             return "Success: Event Created!";
         } catch (SQLException e) { return "Error: Failed to create event."; }
     }
 
-    public String updateAnyEvent(int eventId, String title, String desc, String date, int capacity) {
-        String sql = "UPDATE Events SET title = ?, description = ?, event_date = ?, capacity = ? WHERE id = ?";
+    public String updateAnyEvent(int eventId, String title, String description, String date, String time, int capacity) {
+        String sql = "UPDATE Events SET title = ?, description = ?, event_date = ?, event_time = ?, capacity = ? WHERE id = ?";
         try (Connection conn = DatabaseManager.connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, title); pstmt.setString(2, desc);
-            pstmt.setString(3, date); pstmt.setInt(4, capacity); pstmt.setInt(5, eventId);
+            pstmt.setString(1, title); pstmt.setString(2, description);
+            pstmt.setString(3, date); pstmt.setString(4, time); 
+            pstmt.setInt(5, capacity); pstmt.setInt(6, eventId);
             if (pstmt.executeUpdate() > 0) return "Success: Event updated!";
         } catch (SQLException e) {}
         return "Error: Failed to update event.";
@@ -33,9 +38,11 @@ public class Admin extends User {
 
     public List<Event> viewAllEvents() {
         List<Event> events = new ArrayList<>();
-        String sql = "SELECT e.id, e.title, e.description, e.event_date, e.capacity, u.username as organizer FROM Events e LEFT JOIN Users u ON e.organizer_id = u.id";
+        String sql = "SELECT e.id, e.title, e.description, e.event_date, e.event_time, e.capacity, u.username as organizer FROM Events e LEFT JOIN Users u ON e.organizer_id = u.id";
         try (Connection conn = DatabaseManager.connect(); Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
-            while (rs.next()) events.add(new Event(rs.getInt("id"), rs.getString("title"), rs.getString("description"), rs.getString("event_date"), rs.getInt("capacity"), rs.getString("organizer")));
+            while (rs.next()) {
+                events.add(new Event(rs.getInt("id"), rs.getString("title"), rs.getString("description"), rs.getString("event_date"), rs.getString("event_time"), rs.getInt("capacity"), rs.getString("organizer")));
+            }
         } catch (SQLException e) {}
         return events;
     }
@@ -53,6 +60,7 @@ public class Admin extends User {
         return "Error terminating event.";
     }
 
+    // --- USER MANAGEMENT ---
     public List<String[]> viewAllUsers() {
         List<String[]> users = new ArrayList<>();
         String sql = "SELECT id, username, role, full_name FROM Users WHERE role != 'Admin'";
@@ -80,7 +88,7 @@ public class Admin extends User {
         return "Error deleting account.";
     }
 
-    // --- Added missing report generation ---
+    // --- PARTICIPANT MANAGEMENT (Admin Overrides) ---
     public List<String> generateReport(int eventId) {
         List<String> report = new ArrayList<>();
         String userSql = "SELECT u.username, r.status FROM Registrations r JOIN Users u ON r.participant_id = u.id WHERE r.event_id = ?";
@@ -127,6 +135,7 @@ public class Admin extends User {
 
     public String inviteParticipant(int eventId, String username) {
         String sql = "INSERT INTO Invites(event_id, participant_id) SELECT ?, id FROM Users WHERE username = ? AND role = 'Participant'";
+        // FIXED: Added "conn." before prepareStatement(sql)
         try (Connection conn = DatabaseManager.connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, eventId); pstmt.setString(2, username);
             if (pstmt.executeUpdate() > 0) return "Success: Invited " + username;

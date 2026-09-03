@@ -49,7 +49,7 @@ public class MainGUI {
             User u = User.login(userField.getText(), new String(passField.getPassword()));
             if (u != null) {
                 JPanel eventsPanel = null;
-                if (u instanceof Admin) eventsPanel = createAdminDashboard((Admin) u); // Updated Admin Dashboard Route
+                if (u instanceof Admin) eventsPanel = createAdminDashboard((Admin) u);
                 else if (u instanceof Organizer) eventsPanel = createOrganizerEvents((Organizer) u);
                 else if (u instanceof Participant) eventsPanel = createParticipantEvents((Participant) u);
                 
@@ -119,25 +119,22 @@ public class MainGUI {
         nameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         
         JLabel roleLabel = new JLabel(u.getRole(), SwingConstants.CENTER);
-        roleLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        roleLabel.setFont(new Font("SansSerif", Font.BOLD, 12));
         roleLabel.setForeground(Color.LIGHT_GRAY);
         roleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        // --- ADD THIS TO SHOW OFF POLYMORPHISM ---
+        
         JLabel descLabel = new JLabel("<html><center>" + u.getRoleDescription() + "</center></html>", SwingConstants.CENTER);
         descLabel.setFont(new Font("SansSerif", Font.ITALIC, 10));
         descLabel.setForeground(new Color(150, 150, 150));
         descLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         JButton eventsBtn = createSidebarButton("Dashboard");
-        sidebar.add(nameLabel);
-        sidebar.add(roleLabel);
-        sidebar.add(descLabel);
         JButton profileBtn = createSidebarButton("Profile");
         JButton logoutBtn = createSidebarButton("Logout");
 
         sidebar.add(nameLabel);
         sidebar.add(roleLabel);
+        sidebar.add(descLabel); 
         sidebar.add(Box.createRigidArea(new Dimension(0, 30)));
         sidebar.add(eventsBtn);
         sidebar.add(Box.createRigidArea(new Dimension(0, 10)));
@@ -212,14 +209,56 @@ public class MainGUI {
         return panel;
     }
 
+    class DateTimePicker {
+        private JComboBox<String> monthBox, dayBox, yearBox, hourBox, minBox, ampmBox;
+        private JPanel mainPanel;
+
+        public DateTimePicker(String existingDate, String existingTime) {
+            String[] months = {"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"};
+            String[] days = new String[31]; for (int i = 0; i < 31; i++) days[i] = String.format("%02d", i + 1);
+            String[] years = {"2026", "2027", "2028", "2029", "2030"};
+            String[] hours = new String[12]; for (int i = 0; i < 12; i++) hours[i] = String.format("%02d", i + 1);
+            String[] mins = {"00", "15", "30", "45"};
+            
+            monthBox = new JComboBox<>(months); dayBox = new JComboBox<>(days); yearBox = new JComboBox<>(years);
+            hourBox = new JComboBox<>(hours); minBox = new JComboBox<>(mins); ampmBox = new JComboBox<>(new String[]{"AM", "PM"});
+
+            if (existingDate != null && !existingDate.isEmpty()) {
+                String[] d = existingDate.split(" ");
+                if (d.length == 3) { monthBox.setSelectedItem(d[0]); dayBox.setSelectedItem(d[1]); yearBox.setSelectedItem(d[2]); }
+            }
+            if (existingTime != null && !existingTime.isEmpty()) {
+                String[] t1 = existingTime.split(" ");
+                if (t1.length == 2) {
+                    String[] t2 = t1[0].split(":");
+                    if (t2.length == 2) { hourBox.setSelectedItem(t2[0]); minBox.setSelectedItem(t2[1]); ampmBox.setSelectedItem(t1[1]); }
+                }
+            }
+
+            JPanel datePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 0));
+            datePanel.add(monthBox); datePanel.add(dayBox); datePanel.add(new JLabel(", ")); datePanel.add(yearBox);
+            
+            JPanel timePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 0));
+            timePanel.add(hourBox); timePanel.add(new JLabel(":")); timePanel.add(minBox); timePanel.add(new JLabel(" ")); timePanel.add(ampmBox);
+
+            mainPanel = new JPanel(new GridLayout(2, 2, 5, 5));
+            mainPanel.add(new JLabel("Date:")); mainPanel.add(datePanel);
+            mainPanel.add(new JLabel("Time:")); mainPanel.add(timePanel);
+        }
+
+        public JPanel getPanel() { return mainPanel; }
+        public String getDateString() { return monthBox.getSelectedItem() + " " + dayBox.getSelectedItem() + " " + yearBox.getSelectedItem(); }
+        public String getTimeString() { return hourBox.getSelectedItem() + ":" + minBox.getSelectedItem() + " " + ampmBox.getSelectedItem(); }
+    }
+
     private JPanel createParticipantEvents(Participant p) {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         
-        String[] cols = {"ID", "Title", "Description", "Date & Time", "Capacity"};
+        String[] cols = {"ID", "Title", "Description", "Date", "Time", "Capacity"};
         DefaultTableModel model = new DefaultTableModel(cols, 0) { @Override public boolean isCellEditable(int r, int c) { return false; } };
         JTable table = new JTable(model);
-        for (Event e : p.browseEvents()) model.addRow(new Object[]{e.getId(), e.getTitle(), e.getDescription(), e.getDate(), e.getCapacity()});
+        for (Event e : p.browseEvents()) model.addRow(new Object[]{e.getId(), e.getTitle(), e.getDescription(), e.getDate(), e.getTime(), e.getCapacity()});
         
         JButton regBtn = new JButton("Register for Selected Event");
         regBtn.addActionListener(e -> {
@@ -245,14 +284,14 @@ public class MainGUI {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        String[] cols = {"ID", "Title", "Description", "Date & Time", "Capacity"};
+        String[] cols = {"ID", "Title", "Description", "Date", "Time", "Capacity"};
         DefaultTableModel model = new DefaultTableModel(cols, 0) { @Override public boolean isCellEditable(int r, int c) { return false; } };
         JTable table = new JTable(model);
         table.setToolTipText("Double-click an event to view reports & participants.");
 
         Runnable refreshTable = () -> {
             model.setRowCount(0);
-            for (Event ev : o.viewMyEvents()) model.addRow(new Object[]{ev.getId(), ev.getTitle(), ev.getDescription(), ev.getDate(), ev.getCapacity()});
+            for (Event ev : o.viewMyEvents()) model.addRow(new Object[]{ev.getId(), ev.getTitle(), ev.getDescription(), ev.getDate(), ev.getTime(), ev.getCapacity()});
         };
         refreshTable.run();
 
@@ -261,7 +300,7 @@ public class MainGUI {
             public void mouseClicked(java.awt.event.MouseEvent e) {
                 if (e.getClickCount() == 2) { 
                     int row = table.getSelectedRow();
-                    if (row != -1) openEventReport(o, (int)table.getValueAt(row, 0), (String)table.getValueAt(row, 1), (String)table.getValueAt(row, 3), (int)table.getValueAt(row, 4));
+                    if (row != -1) openEventReport(o, (int)table.getValueAt(row, 0), (String)table.getValueAt(row, 1), (String)table.getValueAt(row, 3), (String)table.getValueAt(row, 4), (int)table.getValueAt(row, 5));
                 }
             }
         });
@@ -273,15 +312,24 @@ public class MainGUI {
 
         createBtn.addActionListener(e -> {
             JTextField titleF = new JTextField(); JTextArea descF = new JTextArea(3, 20); JTextField capF = new JTextField();
-            JTextField dateF = new JTextField(); 
-            Object[] msg = {"Title:", titleF, "Description:", new JScrollPane(descF), "Date (e.g., Oct 10, 2026):", dateF, "Capacity:", capF};
+            DateTimePicker dtPicker = new DateTimePicker(null, null);
+            Object[] msg = {"Title:", titleF, "Description:", new JScrollPane(descF), dtPicker.getPanel(), "Capacity:", capF};
             
-            if (JOptionPane.showConfirmDialog(frame, msg, "Create New Event", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
-                try {
-                    // FIXED: Added descF.getText() as the second argument
-                    JOptionPane.showMessageDialog(frame, o.createEvent(titleF.getText(), descF.getText(), dateF.getText(), Integer.parseInt(capF.getText())));
-                    refreshTable.run();
-                } catch (NumberFormatException ex) { JOptionPane.showMessageDialog(frame, "Capacity must be a valid number.", "Error", JOptionPane.ERROR_MESSAGE); }
+            // Validation Loop
+            while (true) {
+                if (JOptionPane.showConfirmDialog(frame, msg, "Create New Event", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
+                    if (titleF.getText().trim().isEmpty() || capF.getText().trim().isEmpty()) {
+                        JOptionPane.showMessageDialog(frame, "Please fill in all required fields.", "Error", JOptionPane.ERROR_MESSAGE);
+                        continue;
+                    }
+                    try {
+                        String res = o.createEvent(titleF.getText(), descF.getText(), dtPicker.getDateString(), dtPicker.getTimeString(), Integer.parseInt(capF.getText()));
+                        JOptionPane.showMessageDialog(frame, res);
+                        if (res.startsWith("Success")) { refreshTable.run(); break; }
+                    } catch (NumberFormatException ex) { 
+                        JOptionPane.showMessageDialog(frame, "Capacity must be a valid number.", "Error", JOptionPane.ERROR_MESSAGE); 
+                    }
+                } else break; // User hit cancel
             }
         });
 
@@ -291,17 +339,25 @@ public class MainGUI {
             
             JTextField titleF = new JTextField((String) table.getValueAt(row, 1));
             JTextArea descF = new JTextArea(table.getValueAt(row, 2) != null ? (String) table.getValueAt(row, 2) : "", 3, 20);
-            JTextField dateF = new JTextField((String) table.getValueAt(row, 3));
-            JTextField capF = new JTextField(String.valueOf(table.getValueAt(row, 4)));
+            JTextField capF = new JTextField(String.valueOf(table.getValueAt(row, 5)));
+            DateTimePicker dtPicker = new DateTimePicker((String) table.getValueAt(row, 3), (String) table.getValueAt(row, 4));
+            Object[] msg = {"Title:", titleF, "Description:", new JScrollPane(descF), dtPicker.getPanel(), "Capacity:", capF};
             
-            Object[] msg = {"Title:", titleF, "Description:", new JScrollPane(descF), "Date:", dateF, "Capacity:", capF};
-            
-            if (JOptionPane.showConfirmDialog(frame, msg, "Edit Event", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
-                try {
-                    // FIXED: Added descF.getText() as the third argument
-                    JOptionPane.showMessageDialog(frame, o.updateEvent((int)table.getValueAt(row, 0), titleF.getText(), descF.getText(), dateF.getText(), Integer.parseInt(capF.getText())));
-                    refreshTable.run();
-                } catch (NumberFormatException ex) { JOptionPane.showMessageDialog(frame, "Capacity must be a valid number.", "Error", JOptionPane.ERROR_MESSAGE); }
+            // Validation Loop
+            while (true) {
+                if (JOptionPane.showConfirmDialog(frame, msg, "Edit Event", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
+                    if (titleF.getText().trim().isEmpty() || capF.getText().trim().isEmpty()) {
+                        JOptionPane.showMessageDialog(frame, "Please fill in all required fields.", "Error", JOptionPane.ERROR_MESSAGE);
+                        continue;
+                    }
+                    try {
+                        String res = o.updateEvent((int)table.getValueAt(row, 0), titleF.getText(), descF.getText(), dtPicker.getDateString(), dtPicker.getTimeString(), Integer.parseInt(capF.getText()));
+                        JOptionPane.showMessageDialog(frame, res);
+                        if (res.startsWith("Success")) { refreshTable.run(); break; }
+                    } catch (NumberFormatException ex) { 
+                        JOptionPane.showMessageDialog(frame, "Capacity must be a valid number.", "Error", JOptionPane.ERROR_MESSAGE); 
+                    }
+                } else break;
             }
         });
 
@@ -317,12 +373,14 @@ public class MainGUI {
         return panel;
     }
 
-    private void openEventReport(Organizer o, int eventId, String title, String date, int capacity) {
+    private void openEventReport(Organizer o, int eventId, String title, String date, String time, int capacity) {
         JDialog dialog = new JDialog(frame, "Management: " + title, true);
         dialog.setSize(450, 400); dialog.setLocationRelativeTo(frame); dialog.setLayout(new BorderLayout(10, 10));
 
         JPanel details = new JPanel(new GridLayout(3, 1)); details.setBorder(BorderFactory.createEmptyBorder(10, 15, 5, 15));
-        details.add(new JLabel("<html><b>Title:</b> " + title + "</html>")); details.add(new JLabel("<html><b>Date:</b> " + date + "</html>")); details.add(new JLabel("<html><b>Capacity:</b> " + capacity + "</html>"));
+        details.add(new JLabel("<html><b>Title:</b> " + title + "</html>")); 
+        details.add(new JLabel("<html><b>Date & Time:</b> " + date + " @ " + time + "</html>")); 
+        details.add(new JLabel("<html><b>Capacity:</b> " + capacity + "</html>"));
 
         DefaultListModel<String> listModel = new DefaultListModel<>();
         Runnable refreshList = () -> { listModel.clear(); for (String p : o.generateReport(eventId)) listModel.addElement(p); };
@@ -354,13 +412,13 @@ public class MainGUI {
         dialog.setVisible(true);
     }
 
-    private void openEventReport(Admin a, int eventId, String title, String date, int capacity) {
+    private void openEventReport(Admin a, int eventId, String title, String date, String time, int capacity) {
         JDialog dialog = new JDialog(frame, "Admin Management: " + title, true);
         dialog.setSize(450, 400); dialog.setLocationRelativeTo(frame); dialog.setLayout(new BorderLayout(10, 10));
 
         JPanel details = new JPanel(new GridLayout(3, 1)); details.setBorder(BorderFactory.createEmptyBorder(10, 15, 5, 15));
         details.add(new JLabel("<html><b>Title:</b> " + title + "</html>")); 
-        details.add(new JLabel("<html><b>Date:</b> " + date + "</html>")); 
+        details.add(new JLabel("<html><b>Date & Time:</b> " + date + " @ " + time + "</html>")); 
         details.add(new JLabel("<html><b>Capacity:</b> " + capacity + "</html>"));
 
         DefaultListModel<String> listModel = new DefaultListModel<>();
@@ -393,10 +451,6 @@ public class MainGUI {
         dialog.setVisible(true);
     }
 
-    // =========================================================
-    // --- NEW TABBED ADMIN DASHBOARD ---
-    // =========================================================
-    
     private JPanel createAdminDashboard(Admin a) {
         JTabbedPane adminTabs = new JTabbedPane();
         adminTabs.addTab("Event Management", createAdminEventsPanel(a));
@@ -411,16 +465,10 @@ public class MainGUI {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        String[] cols = {"ID", "Title", "Description", "Date & Time", "Capacity", "Organizer"};
+        String[] cols = {"ID", "Title", "Description", "Date", "Time", "Capacity", "Organizer"};
         DefaultTableModel model = new DefaultTableModel(cols, 0) { @Override public boolean isCellEditable(int r, int c) { return false; } };
         JTable table = new JTable(model);
         
-        Runnable refreshTable = () -> {
-            model.setRowCount(0);
-            for (Event ev : a.viewAllEvents()) model.addRow(new Object[]{ev.getId(), ev.getTitle(), ev.getDescription(), ev.getDate(), ev.getCapacity(), ev.getOrganizerName()});
-        };
-        refreshTable.run();
-
         table.setToolTipText("Double-click an event to view reports & participants.");
         table.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
@@ -428,12 +476,17 @@ public class MainGUI {
                 if (e.getClickCount() == 2) { 
                     int row = table.getSelectedRow();
                     if (row != -1) {
-                        // Columns: 0=ID, 1=Title, 2=Desc, 3=Date, 4=Capacity, 5=Organizer
-                        openEventReport(a, (int)table.getValueAt(row, 0), (String)table.getValueAt(row, 1), (String)table.getValueAt(row, 3), (int)table.getValueAt(row, 4));
+                        openEventReport(a, (int)table.getValueAt(row, 0), (String)table.getValueAt(row, 1), (String)table.getValueAt(row, 3), (String)table.getValueAt(row, 4), (int)table.getValueAt(row, 5));
                     }
                 }
             }
         });
+
+        Runnable refreshTable = () -> {
+            model.setRowCount(0);
+            for (Event ev : a.viewAllEvents()) model.addRow(new Object[]{ev.getId(), ev.getTitle(), ev.getDescription(), ev.getDate(), ev.getTime(), ev.getCapacity(), ev.getOrganizerName()});
+        };
+        refreshTable.run();
 
         JPanel bot = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
         JButton createBtn = new JButton("Create Event");
@@ -442,11 +495,24 @@ public class MainGUI {
 
         createBtn.addActionListener(e -> {
             JTextField titleF = new JTextField(); JTextArea descF = new JTextArea(3, 20); JTextField capF = new JTextField();
-            Object[] msg = {"Title:", titleF, "Description:", new JScrollPane(descF), "Date (e.g., Oct 10, 2026):", new JTextField(), "Capacity:", capF};
+            DateTimePicker dtPicker = new DateTimePicker(null, null);
+            Object[] msg = {"Title:", titleF, "Description:", new JScrollPane(descF), dtPicker.getPanel(), "Capacity:", capF};
             
-            if (JOptionPane.showConfirmDialog(frame, msg, "Create Event", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
-                JOptionPane.showMessageDialog(frame, a.createEvent(titleF.getText(), descF.getText(), ((JTextField)msg[5]).getText(), Integer.parseInt(capF.getText())));
-                refreshTable.run();
+            // Validation Loop
+            while (true) {
+                if (JOptionPane.showConfirmDialog(frame, msg, "Create Event", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
+                    if (titleF.getText().trim().isEmpty() || capF.getText().trim().isEmpty()) {
+                        JOptionPane.showMessageDialog(frame, "Please fill in all required fields.", "Error", JOptionPane.ERROR_MESSAGE);
+                        continue;
+                    }
+                    try {
+                        String res = a.createEvent(titleF.getText(), descF.getText(), dtPicker.getDateString(), dtPicker.getTimeString(), Integer.parseInt(capF.getText()));
+                        JOptionPane.showMessageDialog(frame, res);
+                        if (res.startsWith("Success")) { refreshTable.run(); break; }
+                    } catch (NumberFormatException ex) { 
+                        JOptionPane.showMessageDialog(frame, "Capacity must be a valid number.", "Error", JOptionPane.ERROR_MESSAGE); 
+                    }
+                } else break; // User hit cancel
             }
         });
 
@@ -456,14 +522,25 @@ public class MainGUI {
             
             JTextField titleF = new JTextField((String) table.getValueAt(row, 1));
             JTextArea descF = new JTextArea(table.getValueAt(row, 2) != null ? (String) table.getValueAt(row, 2) : "", 3, 20);
-            JTextField dateF = new JTextField((String) table.getValueAt(row, 3));
-            JTextField capF = new JTextField(String.valueOf(table.getValueAt(row, 4)));
+            JTextField capF = new JTextField(String.valueOf(table.getValueAt(row, 5)));
+            DateTimePicker dtPicker = new DateTimePicker((String) table.getValueAt(row, 3), (String) table.getValueAt(row, 4));
+            Object[] msg = {"Title:", titleF, "Description:", new JScrollPane(descF), dtPicker.getPanel(), "Capacity:", capF};
             
-            Object[] msg = {"Title:", titleF, "Description:", new JScrollPane(descF), "Date:", dateF, "Capacity:", capF};
-            
-            if (JOptionPane.showConfirmDialog(frame, msg, "Edit Event", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
-                JOptionPane.showMessageDialog(frame, a.updateAnyEvent((int)table.getValueAt(row, 0), titleF.getText(), descF.getText(), dateF.getText(), Integer.parseInt(capF.getText())));
-                refreshTable.run();
+            // Validation Loop
+            while (true) {
+                if (JOptionPane.showConfirmDialog(frame, msg, "Edit Event", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
+                    if (titleF.getText().trim().isEmpty() || capF.getText().trim().isEmpty()) {
+                        JOptionPane.showMessageDialog(frame, "Please fill in all required fields.", "Error", JOptionPane.ERROR_MESSAGE);
+                        continue;
+                    }
+                    try {
+                        String res = a.updateAnyEvent((int)table.getValueAt(row, 0), titleF.getText(), descF.getText(), dtPicker.getDateString(), dtPicker.getTimeString(), Integer.parseInt(capF.getText()));
+                        JOptionPane.showMessageDialog(frame, res);
+                        if (res.startsWith("Success")) { refreshTable.run(); break; }
+                    } catch (NumberFormatException ex) { 
+                        JOptionPane.showMessageDialog(frame, "Capacity must be a valid number.", "Error", JOptionPane.ERROR_MESSAGE); 
+                    }
+                } else break;
             }
         });
 
@@ -502,9 +579,18 @@ public class MainGUI {
         createBtn.addActionListener(e -> {
             JTextField userF = new JTextField(); JPasswordField passF = new JPasswordField();
             Object[] msg = {"Username:", userF, "Password:", passF};
-            if (JOptionPane.showConfirmDialog(frame, msg, "Create Participant", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
-                JOptionPane.showMessageDialog(frame, User.register(userF.getText(), new String(passF.getPassword()), "Participant"));
-                refreshTable.run();
+            
+            // Validation Loop
+            while(true) {
+                if (JOptionPane.showConfirmDialog(frame, msg, "Create Participant", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
+                    if (userF.getText().trim().isEmpty() || new String(passF.getPassword()).trim().isEmpty()) {
+                        JOptionPane.showMessageDialog(frame, "Fields cannot be empty.", "Error", JOptionPane.ERROR_MESSAGE);
+                        continue;
+                    }
+                    String res = User.register(userF.getText(), new String(passF.getPassword()), "Participant");
+                    JOptionPane.showMessageDialog(frame, res);
+                    if (res.startsWith("Success")) { refreshTable.run(); break; }
+                } else break; // User canceled
             }
         });
 

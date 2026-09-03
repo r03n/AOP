@@ -38,6 +38,7 @@ public class DatabaseManager {
                     + "title TEXT NOT NULL, "
                     + "description TEXT, "
                     + "event_date TEXT NOT NULL, "
+                    + "event_time TEXT NOT NULL, "
                     + "capacity INTEGER NOT NULL, "
                     + "organizer_id INTEGER, "
                     + "FOREIGN KEY(organizer_id) REFERENCES Users(id));";

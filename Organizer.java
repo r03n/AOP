@@ -3,22 +3,36 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Organizer extends User {
-    public Organizer(int id, String username) { super(id, username, "Organizer"); }
+    
+    public Organizer(int id, String username) { 
+        super(id, username, "Organizer"); 
+    }
 
-    // POLYMORPHISM IN ACTION
     @Override
     public String getRoleDescription() { 
         return "Can create, manage, and delete personal events."; 
     }
 
-    public String createEvent(String title, String description, String date, int capacity) {
-        String sql = "INSERT INTO Events(title, description, event_date, capacity, organizer_id) VALUES(?, ?, ?, ?, ?)";
+    public String createEvent(String title, String description, String date, String time, int capacity) {
+        String sql = "INSERT INTO Events(title, description, event_date, event_time, capacity, organizer_id) VALUES(?, ?, ?, ?, ?, ?)";
         try (Connection conn = DatabaseManager.connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, title); pstmt.setString(2, description); pstmt.setString(3, date); 
-            pstmt.setInt(4, capacity); pstmt.setInt(5, this.id);
+            pstmt.setString(1, title); pstmt.setString(2, description); 
+            pstmt.setString(3, date); pstmt.setString(4, time); 
+            pstmt.setInt(5, capacity); pstmt.setInt(6, this.id);
             pstmt.executeUpdate();
             return "Success: Event Created!";
         } catch (SQLException e) { return "Error: Failed to create event."; }
+    }
+
+    public String updateEvent(int eventId, String title, String description, String date, String time, int capacity) {
+        String sql = "UPDATE Events SET title = ?, description = ?, event_date = ?, event_time = ?, capacity = ? WHERE id = ? AND organizer_id = ?";
+        try (Connection conn = DatabaseManager.connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, title); pstmt.setString(2, description); 
+            pstmt.setString(3, date); pstmt.setString(4, time);
+            pstmt.setInt(5, capacity); pstmt.setInt(6, eventId); pstmt.setInt(7, this.id); 
+            if (pstmt.executeUpdate() > 0) return "Success: Event updated!";
+            return "Error: Event not found or unauthorized.";
+        } catch (SQLException e) { return "Error: Failed to update event."; }
     }
 
     public List<Event> viewMyEvents() {
@@ -27,7 +41,9 @@ public class Organizer extends User {
         try (Connection conn = DatabaseManager.connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, this.id);
             try (ResultSet rs = pstmt.executeQuery()) {
-                while (rs.next()) events.add(new Event(rs.getInt("id"), rs.getString("title"), rs.getString("description"), rs.getString("event_date"), rs.getInt("capacity"), this.id));
+                while (rs.next()) {
+                    events.add(new Event(rs.getInt("id"), rs.getString("title"), rs.getString("description"), rs.getString("event_date"), rs.getString("event_time"), rs.getInt("capacity"), this.id));
+                }
             }
         } catch (SQLException e) {}
         return events;
@@ -44,6 +60,18 @@ public class Organizer extends User {
             if (evStmt.executeUpdate() > 0) return "Success: Event deleted.";
             return "Error: Event not found or unauthorized.";
         } catch (SQLException e) { return "Error deleting event."; }
+    }
+
+    public List<String> generateReport(int eventId) {
+        List<String> report = new ArrayList<>();
+        String userSql = "SELECT u.username, r.status FROM Registrations r JOIN Users u ON r.participant_id = u.id WHERE r.event_id = ?";
+        try (Connection conn = DatabaseManager.connect(); PreparedStatement userStmt = conn.prepareStatement(userSql)) {
+            userStmt.setInt(1, eventId);
+            try (ResultSet rs = userStmt.executeQuery()) {
+                while (rs.next()) report.add(rs.getString("username") + " (" + rs.getString("status") + ")");
+            }
+        } catch (SQLException e) {}
+        return report;
     }
 
     public String forceParticipantUpdate(int eventId, String username, boolean isAdding) {
@@ -78,18 +106,6 @@ public class Organizer extends User {
         return "Error: User not found or update failed.";
     }
 
-    public List<String> generateReport(int eventId) {
-        List<String> report = new ArrayList<>();
-        String userSql = "SELECT u.username, r.status FROM Registrations r JOIN Users u ON r.participant_id = u.id WHERE r.event_id = ?";
-        try (Connection conn = DatabaseManager.connect(); PreparedStatement userStmt = conn.prepareStatement(userSql)) {
-            userStmt.setInt(1, eventId);
-            try (ResultSet rs = userStmt.executeQuery()) {
-                while (rs.next()) report.add(rs.getString("username") + " (" + rs.getString("status") + ")");
-            }
-        } catch (SQLException e) {}
-        return report;
-    }
-
     public String inviteParticipant(int eventId, String username) {
         String sql = "INSERT INTO Invites(event_id, participant_id) SELECT ?, id FROM Users WHERE username = ? AND role = 'Participant'";
         try (Connection conn = DatabaseManager.connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -97,15 +113,5 @@ public class Organizer extends User {
             if (pstmt.executeUpdate() > 0) return "Success: Invited " + username;
             return "Error: Participant not found.";
         } catch (SQLException e) { return "Error: Could not invite."; }
-    }
-    
-    public String updateEvent(int eventId, String title, String description, String date, int capacity) {
-        String sql = "UPDATE Events SET title = ?, description = ?, event_date = ?, capacity = ? WHERE id = ? AND organizer_id = ?";
-        try (Connection conn = DatabaseManager.connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, title); pstmt.setString(2, description); pstmt.setString(3, date);
-            pstmt.setInt(4, capacity); pstmt.setInt(5, eventId); pstmt.setInt(6, this.id); 
-            if (pstmt.executeUpdate() > 0) return "Success: Event updated!";
-            return "Error: Event not found or unauthorized.";
-        } catch (SQLException e) { return "Error: Failed to update event."; }
     }
 }

@@ -3,9 +3,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Participant extends User {
-    public Participant(int id, String username) { super(id, username, "Participant"); }
+    
+    public Participant(int id, String username) { 
+        super(id, username, "Participant"); 
+    }
 
-    // POLYMORPHISM IN ACTION
     @Override
     public String getRoleDescription() { 
         return "Can browse and register for events."; 
@@ -16,7 +18,7 @@ public class Participant extends User {
         String sql = "SELECT * FROM Events";
         try (Connection conn = DatabaseManager.connect(); Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
-                events.add(new Event(rs.getInt("id"), rs.getString("title"), rs.getString("description"), rs.getString("event_date"), rs.getInt("capacity"), rs.getInt("organizer_id")));
+                events.add(new Event(rs.getInt("id"), rs.getString("title"), rs.getString("description"), rs.getString("event_date"), rs.getString("event_time"), rs.getInt("capacity"), rs.getInt("organizer_id")));
             }
         } catch (SQLException e) {}
         return events;
@@ -32,21 +34,29 @@ public class Participant extends User {
              PreparedStatement checkStmt = conn.prepareStatement(checkSql); 
              PreparedStatement insertStmt = conn.prepareStatement(insertSql)) {
             
+            // Check Capacity First
             capStmt.setInt(1, eventId); capStmt.setInt(2, eventId);
             try (ResultSet rsCap = capStmt.executeQuery()) {
                 if (rsCap.next()) {
-                    if (rsCap.getInt("current_count") >= rsCap.getInt("capacity")) return "Error: Event has reached its maximum capacity.";
-                } else return "Error: Event does not exist.";
+                    if (rsCap.getInt("current_count") >= rsCap.getInt("capacity")) {
+                        return "Error: Event has reached its maximum capacity.";
+                    }
+                } else {
+                    return "Error: Event does not exist.";
+                }
             }
 
+            // Check if already registered
             checkStmt.setInt(1, this.id); checkStmt.setInt(2, eventId);
             try (ResultSet rs = checkStmt.executeQuery()) {
                 if (rs.next()) return "Error: You are already registered for this event.";
             }
 
+            // Confirm Registration
             insertStmt.setInt(1, this.id); insertStmt.setInt(2, eventId);
             insertStmt.executeUpdate();
             return "Success: Registered for Event ID " + eventId;
+            
         } catch (SQLException e) { return "Error processing registration."; }
     }
     
