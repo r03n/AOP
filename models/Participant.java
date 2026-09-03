@@ -34,6 +34,13 @@ public class Participant extends User {
     }
 
     public String registerForEvent(int eventId) {
+        if (fullName == null || fullName.trim().isEmpty()
+                || age <= 0
+                || department == null || department.trim().isEmpty()
+                || yearLevel == null || yearLevel.trim().isEmpty()) {
+            return "Error: Please complete your profile before registering for an event.";
+        }
+
         String capCheckSql = "SELECT capacity, (SELECT COUNT(*) FROM Registrations WHERE event_id = ?) AS current_count FROM Events WHERE id = ?";
         String checkSql = "SELECT * FROM Registrations WHERE participant_id = ? AND event_id = ?";
         String insertSql = "INSERT INTO Registrations(participant_id, event_id, status) VALUES(?, ?, 'Confirmed')";
