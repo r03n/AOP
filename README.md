@@ -1,6 +1,12 @@
 # AOP
 Yahoo
 
+## Default Admin Account:
+```yml
+Username: admin
+Password: admin123
+```
+
 To-Do:
 - [x] Fix Directory Tree
 - [x] Add TIME to Events
@@ -14,4 +20,5 @@ To-Do:
 - [ ] Show full details of Participant to ADMIN
 - [ ] Disallow Participant from Registering to Events if PROFILE is NOT filled out
 - [ ] Allow Participant to BACKOUT / UNREGISTER from Events
+- [ ] Add CHANGE PASSWORD Option to all Users
 - [ ] Recheck ALL EXCEPTIONS
