@@ -123,7 +123,16 @@ public class MainGUI {
         roleLabel.setForeground(Color.LIGHT_GRAY);
         roleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
+        // --- ADD THIS TO SHOW OFF POLYMORPHISM ---
+        JLabel descLabel = new JLabel("<html><center>" + u.getRoleDescription() + "</center></html>", SwingConstants.CENTER);
+        descLabel.setFont(new Font("SansSerif", Font.ITALIC, 10));
+        descLabel.setForeground(new Color(150, 150, 150));
+        descLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
         JButton eventsBtn = createSidebarButton("Dashboard");
+        sidebar.add(nameLabel);
+        sidebar.add(roleLabel);
+        sidebar.add(descLabel);
         JButton profileBtn = createSidebarButton("Profile");
         JButton logoutBtn = createSidebarButton("Logout");
 

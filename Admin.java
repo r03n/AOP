@@ -5,7 +5,12 @@ import java.util.List;
 public class Admin extends User {
     public Admin(int id, String username) { super(id, username, "Admin"); }
 
-    // --- EVENT MANAGEMENT (Organizer equivalent but global) ---
+    // POLYMORPHISM IN ACTION
+    @Override
+    public String getRoleDescription() { 
+        return "Has full system access and user management."; 
+    }
+
     public String createEvent(String title, String desc, String date, int capacity) {
         String sql = "INSERT INTO Events(title, description, event_date, capacity, organizer_id) VALUES(?, ?, ?, ?, ?)";
         try (Connection conn = DatabaseManager.connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -48,14 +53,11 @@ public class Admin extends User {
         return "Error terminating event.";
     }
 
-    // --- USER MANAGEMENT ---
     public List<String[]> viewAllUsers() {
         List<String[]> users = new ArrayList<>();
         String sql = "SELECT id, username, role, full_name FROM Users WHERE role != 'Admin'";
         try (Connection conn = DatabaseManager.connect(); Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
-            while (rs.next()) {
-                users.add(new String[]{ String.valueOf(rs.getInt("id")), rs.getString("username"), rs.getString("role"), rs.getString("full_name") });
-            }
+            while (rs.next()) users.add(new String[]{ String.valueOf(rs.getInt("id")), rs.getString("username"), rs.getString("role"), rs.getString("full_name") });
         } catch (SQLException e) {}
         return users;
     }
@@ -78,6 +80,7 @@ public class Admin extends User {
         return "Error deleting account.";
     }
 
+    // --- Added missing report generation ---
     public List<String> generateReport(int eventId) {
         List<String> report = new ArrayList<>();
         String userSql = "SELECT u.username, r.status FROM Registrations r JOIN Users u ON r.participant_id = u.id WHERE r.event_id = ?";
@@ -98,23 +101,17 @@ public class Admin extends User {
                 if (rs.next()) {
                     int pId = rs.getInt("id");
                     if (isAdding) {
-                        // --- ENFORCE CAPACITY LIMIT ---
                         String capCheckSql = "SELECT capacity, (SELECT COUNT(*) FROM Registrations WHERE event_id = ?) AS current_count FROM Events WHERE id = ?";
                         try (PreparedStatement capStmt = conn.prepareStatement(capCheckSql)) {
                             capStmt.setInt(1, eventId); capStmt.setInt(2, eventId);
                             try (ResultSet rsCap = capStmt.executeQuery()) {
-                                if (rsCap.next() && rsCap.getInt("current_count") >= rsCap.getInt("capacity")) {
-                                    return "Error: Event is at maximum capacity.";
-                                }
+                                if (rsCap.next() && rsCap.getInt("current_count") >= rsCap.getInt("capacity")) return "Error: Event is at maximum capacity.";
                             }
                         }
-                        
                         try (PreparedStatement ins = conn.prepareStatement("INSERT INTO Registrations(participant_id, event_id, status) VALUES(?, ?, 'Force Added')")) {
                             ins.setInt(1, pId); ins.setInt(2, eventId); ins.executeUpdate();
                             return "Success: Added " + username;
-                        } catch (SQLException e) {
-                            return "Error: User is likely already registered."; 
-                        }
+                        } catch (SQLException e) { return "Error: User is likely already registered."; }
                     } else {
                         try (PreparedStatement del = conn.prepareStatement("DELETE FROM Registrations WHERE participant_id = ? AND event_id = ?")) {
                             del.setInt(1, pId); del.setInt(2, eventId);

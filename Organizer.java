@@ -5,7 +5,12 @@ import java.util.List;
 public class Organizer extends User {
     public Organizer(int id, String username) { super(id, username, "Organizer"); }
 
-    // UPDATED: Added String description parameter and updated SQL query
+    // POLYMORPHISM IN ACTION
+    @Override
+    public String getRoleDescription() { 
+        return "Can create, manage, and delete personal events."; 
+    }
+
     public String createEvent(String title, String description, String date, int capacity) {
         String sql = "INSERT INTO Events(title, description, event_date, capacity, organizer_id) VALUES(?, ?, ?, ?, ?)";
         try (Connection conn = DatabaseManager.connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -22,10 +27,7 @@ public class Organizer extends User {
         try (Connection conn = DatabaseManager.connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, this.id);
             try (ResultSet rs = pstmt.executeQuery()) {
-                while (rs.next()) {
-                    // ADDED: rs.getString("description")
-                    events.add(new Event(rs.getInt("id"), rs.getString("title"), rs.getString("description"), rs.getString("event_date"), rs.getInt("capacity"), this.id));
-                }
+                while (rs.next()) events.add(new Event(rs.getInt("id"), rs.getString("title"), rs.getString("description"), rs.getString("event_date"), rs.getInt("capacity"), this.id));
             }
         } catch (SQLException e) {}
         return events;
@@ -52,23 +54,17 @@ public class Organizer extends User {
                 if (rs.next()) {
                     int pId = rs.getInt("id");
                     if (isAdding) {
-                        // --- ENFORCE CAPACITY LIMIT ---
                         String capCheckSql = "SELECT capacity, (SELECT COUNT(*) FROM Registrations WHERE event_id = ?) AS current_count FROM Events WHERE id = ?";
                         try (PreparedStatement capStmt = conn.prepareStatement(capCheckSql)) {
                             capStmt.setInt(1, eventId); capStmt.setInt(2, eventId);
                             try (ResultSet rsCap = capStmt.executeQuery()) {
-                                if (rsCap.next() && rsCap.getInt("current_count") >= rsCap.getInt("capacity")) {
-                                    return "Error: Event is at maximum capacity.";
-                                }
+                                if (rsCap.next() && rsCap.getInt("current_count") >= rsCap.getInt("capacity")) return "Error: Event is at maximum capacity.";
                             }
                         }
-                        
                         try (PreparedStatement ins = conn.prepareStatement("INSERT INTO Registrations(participant_id, event_id, status) VALUES(?, ?, 'Force Added')")) {
                             ins.setInt(1, pId); ins.setInt(2, eventId); ins.executeUpdate();
                             return "Success: Added " + username;
-                        } catch (SQLException e) {
-                            return "Error: User is likely already registered."; 
-                        }
+                        } catch (SQLException e) { return "Error: User is likely already registered."; }
                     } else {
                         try (PreparedStatement del = conn.prepareStatement("DELETE FROM Registrations WHERE participant_id = ? AND event_id = ?")) {
                             del.setInt(1, pId); del.setInt(2, eventId);
@@ -103,23 +99,13 @@ public class Organizer extends User {
         } catch (SQLException e) { return "Error: Could not invite."; }
     }
     
-    // UPDATED: Added String description parameter and updated SQL query
     public String updateEvent(int eventId, String title, String description, String date, int capacity) {
         String sql = "UPDATE Events SET title = ?, description = ?, event_date = ?, capacity = ? WHERE id = ? AND organizer_id = ?";
-        try (Connection conn = DatabaseManager.connect(); 
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-             
-            pstmt.setString(1, title);
-            pstmt.setString(2, description);
-            pstmt.setString(3, date);
-            pstmt.setInt(4, capacity);
-            pstmt.setInt(5, eventId);
-            pstmt.setInt(6, this.id); 
-            
+        try (Connection conn = DatabaseManager.connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, title); pstmt.setString(2, description); pstmt.setString(3, date);
+            pstmt.setInt(4, capacity); pstmt.setInt(5, eventId); pstmt.setInt(6, this.id); 
             if (pstmt.executeUpdate() > 0) return "Success: Event updated!";
             return "Error: Event not found or unauthorized.";
-        } catch (SQLException e) { 
-            return "Error: Failed to update event."; 
-        }
+        } catch (SQLException e) { return "Error: Failed to update event."; }
     }
 }
