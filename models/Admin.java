@@ -1,6 +1,9 @@
+package models;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+
+import database.DatabaseManager;
 
 public class Admin extends User {
     

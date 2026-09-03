@@ -2,8 +2,8 @@
 Yahoo
 
 To-Do:
-- [ ] Fix Directory Tree
-- [ ] Add TIME to Events
+- [x] Fix Directory Tree
+- [x] Add TIME to Events
 - [ ] Show Organizer's Name in Events (Instead of username)
 - [ ] Show Participant's Name in Events (Instead of username)
 - [ ] Fix Detailed Event View

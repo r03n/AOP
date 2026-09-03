@@ -1,4 +1,7 @@
+package models;
 import java.sql.*;
+
+import database.DatabaseManager;
 
 public abstract class User {
     // Encapsulation: Variables are protected/private, accessed via getters

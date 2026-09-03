@@ -1,3 +1,5 @@
+package database;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -5,12 +7,19 @@ import java.sql.Statement;
 import java.io.File;
 
 public class DatabaseManager {
-    private static final String DB_NAME = "aop_database.db";
+    // --- UPDATED: Changed path to the database folder and renamed to aop.db ---
+    private static final String DB_FOLDER = "database";
+    private static final String DB_NAME = DB_FOLDER + File.separator + "aop.db";
     private static final String URL = "jdbc:sqlite:" + DB_NAME;
 
     public static Connection connect() {
         Connection conn = null;
         try { 
+            // Ensure the directory exists before trying to connect
+            File directory = new File(DB_FOLDER);
+            if (!directory.exists()) {
+                directory.mkdirs();
+            }
             conn = DriverManager.getConnection(URL); 
         } catch (SQLException e) { 
             System.err.println("Connection failed: " + e.getMessage()); 
@@ -20,9 +29,15 @@ public class DatabaseManager {
 
     public static void initializeDatabase() {
         try {
+            // Ensure directory exists before initialization 
+            File directory = new File(DB_FOLDER);
+            if (!directory.exists()) {
+                directory.mkdirs();
+            }
+            
+            // If the database already exists, skip creating tables
             if (new File(DB_NAME).exists()) return;
 
-            // --- UPDATED: Added Profile Fields to Users Table ---
             String createUsers = "CREATE TABLE IF NOT EXISTS Users ("
                     + "id INTEGER PRIMARY KEY AUTOINCREMENT, "
                     + "username TEXT UNIQUE NOT NULL, "
