@@ -36,7 +36,7 @@ Password: admin123
 - [ ] Improve Edit Event View
 - [ ] Show Detailed Event View when Double Clicked by Participant
 - [ ] Show full details of Participant to ADMIN
-- [ ] Disallow Participant from Registering to Events if PROFILE is NOT filled out
-- [ ] Allow Participant to BACKOUT / UNREGISTER from Events
+- [x] Disallow Participant from Registering to Events if PROFILE is NOT filled out
+- [x] Allow Participant to BACKOUT / UNREGISTER from Events
 - [ ] Add CHANGE PASSWORD Option to all Users
 - [ ] Recheck ALL EXCEPTIONS
