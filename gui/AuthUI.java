@@ -66,8 +66,8 @@ public class AuthUI {
 
         JTextField userField = new JTextField(15); JPasswordField passField = new JPasswordField(15);
         JPanel fields = new JPanel(new GridLayout(2, 2, 5, 5));
-        fields.add(new JLabel("New Username:")); fields.add(userField);
-        fields.add(new JLabel("New Password:")); fields.add(passField);
+        fields.add(new JLabel("Username:")); fields.add(userField);
+        fields.add(new JLabel("Password:")); fields.add(passField);
 
         JButton regBtn = new JButton("Register");
         regBtn.setBackground(new Color(40, 167, 69)); regBtn.setForeground(Color.WHITE); regBtn.setFocusPainted(false);
