@@ -20,9 +20,8 @@ The application features a strict, three-tier user hierarchy utilizing Object-Or
 * **Design Patterns:** Heavily incorporates core OOP principles including Encapsulation, Polymorphism, Abstraction, and Exception Handling to ensure a highly scalable and crash-resistant application.
 
 ## Execution
-
 ```bash
-# No Gui
+# No GUI
 java -jar AOP.jar --nogui
 ```
 
