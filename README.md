@@ -19,7 +19,14 @@ The application features a strict, three-tier user hierarchy utilizing Object-Or
 * **Backend and Database:** SQLite via JDBC.
 * **Design Patterns:** Heavily incorporates core OOP principles including Encapsulation, Polymorphism, Abstraction, and Exception Handling to ensure a highly scalable and crash-resistant application.
 
-## Default Admin Account:
+## Execution
+
+```bash
+# No Gui
+java -jar AOP.jar --nogui
+```
+
+## Default Admin Account
 ```yml
 Username: admin
 Password: admin123
