@@ -33,7 +33,7 @@ public class DashboardUI {
 
         JButton eventsBtn = createSidebarButton("Dashboard");
         JButton profileBtn = createSidebarButton("Profile");
-        JButton passwordBtn = createSidebarButton("Change Password");
+        // Removed passwordBtn from sidebar here
         JButton logoutBtn = createSidebarButton("Logout");
 
         sidebar.add(nameLabel);
@@ -43,8 +43,6 @@ public class DashboardUI {
         sidebar.add(eventsBtn);
         sidebar.add(Box.createRigidArea(new Dimension(0, 10)));
         sidebar.add(profileBtn);
-        sidebar.add(Box.createRigidArea(new Dimension(0, 10)));
-        sidebar.add(passwordBtn);
         sidebar.add(Box.createVerticalGlue()); 
         sidebar.add(logoutBtn);
 
@@ -56,7 +54,6 @@ public class DashboardUI {
 
         eventsBtn.addActionListener(e -> contentLayout.show(contentArea, "Events"));
         profileBtn.addActionListener(e -> contentLayout.show(contentArea, "Profile"));
-        passwordBtn.addActionListener(e -> openChangePasswordDialog(u, app));
         logoutBtn.addActionListener(e -> app.logout());
 
         mainPanel.add(sidebar, BorderLayout.WEST);
@@ -106,7 +103,8 @@ public class DashboardUI {
 
     private JPanel createProfilePanel(User u, MainGUI app) {
         JPanel panel = new JPanel(new GridBagLayout());
-        JPanel form = new JPanel(new GridLayout(6, 2, 10, 15));
+        // Increased rows to 6 to properly fit the layout
+        JPanel form = new JPanel(new GridLayout(6, 2, 10, 15)); 
         form.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createTitledBorder(null, "Edit Profile", 0, 0, new Font("SansSerif", Font.BOLD, 16)),
             BorderFactory.createEmptyBorder(20, 20, 20, 20)
@@ -121,6 +119,11 @@ public class DashboardUI {
         form.add(new JLabel("Age:")); form.add(ageF);
         form.add(new JLabel("Department:")); form.add(deptF);
         form.add(new JLabel("Year Level:")); form.add(yearF);
+
+        // Added Change Password button here
+        JButton changePassBtn = new JButton("Change Password");
+        changePassBtn.setFocusPainted(false);
+        changePassBtn.addActionListener(e -> openChangePasswordDialog(u, app));
 
         JButton saveBtn = new JButton("Save Changes");
         saveBtn.setBackground(new Color(40, 167, 69));
@@ -137,7 +140,10 @@ public class DashboardUI {
             }
         });
 
-        form.add(new JLabel()); form.add(saveBtn);
+        // Placed both buttons side-by-side at the bottom of the grid
+        form.add(changePassBtn); 
+        form.add(saveBtn);
+        
         panel.add(form);
         return panel;
     }
