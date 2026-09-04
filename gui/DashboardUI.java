@@ -1,8 +1,10 @@
 package gui;
 
 import models.User;
+import models.Admin;
 import javax.swing.*;
 import java.awt.*;
+import database.GodModeSeeder;
 
 public class DashboardUI {
     private JPanel mainPanel;
@@ -17,17 +19,17 @@ public class DashboardUI {
         sidebar.setBorder(BorderFactory.createEmptyBorder(20, 10, 20, 10));
 
         JLabel nameLabel = new JLabel(u.getUsername(), SwingConstants.CENTER);
-        nameLabel.setFont(new Font("SansSerif", Font.BOLD, 18));
+        nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
         nameLabel.setForeground(Color.WHITE);
         nameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         
         JLabel roleLabel = new JLabel(u.getRole(), SwingConstants.CENTER);
-        roleLabel.setFont(new Font("SansSerif", Font.BOLD, 12));
+        roleLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
         roleLabel.setForeground(Color.LIGHT_GRAY);
         roleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         
         JLabel descLabel = new JLabel("<html><center>" + u.getRoleDescription() + "</center></html>", SwingConstants.CENTER);
-        descLabel.setFont(new Font("SansSerif", Font.ITALIC, 10));
+        descLabel.setFont(new Font("Segoe UI", Font.ITALIC, 10));
         descLabel.setForeground(new Color(150, 150, 150));
         descLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
@@ -102,13 +104,14 @@ public class DashboardUI {
 
     private JPanel createProfilePanel(User u, MainGUI app) {
         JPanel panel = new JPanel(new GridBagLayout());
-        JPanel form = new JPanel(new GridLayout(6, 2, 10, 15)); 
+        
+        // Changed to 0 rows so it dynamically adjusts as we add more components
+        JPanel form = new JPanel(new GridLayout(0, 2, 10, 15)); 
         form.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createTitledBorder(null, "Edit Profile", 0, 0, new Font("SansSerif", Font.BOLD, 16)),
+            BorderFactory.createTitledBorder(null, "Edit Profile", 0, 0, new Font("Segoe UI", Font.BOLD, 16)),
             BorderFactory.createEmptyBorder(20, 20, 20, 20)
         ));
 
-        // Increased length of textboxes by specifying column width (25)
         JTextField nameF = new JTextField(u.getFullName() != null ? u.getFullName() : "", 25);
         JTextField ageF = new JTextField(u.getAge() > 0 ? String.valueOf(u.getAge()) : "", 25);
         JTextField deptF = new JTextField(u.getDepartment() != null ? u.getDepartment() : "", 25);
@@ -140,6 +143,20 @@ public class DashboardUI {
 
         form.add(changePassBtn); 
         form.add(saveBtn);
+
+        // Hide the Seeder Button here so it only shows up if the user is an Admin
+        if (u instanceof Admin) {
+            JButton godModeBtn = new JButton("GOD MODE: Seed DB");
+            godModeBtn.setBackground(Color.DARK_GRAY);
+            godModeBtn.setForeground(Color.YELLOW);
+            godModeBtn.setFocusPainted(false);
+            godModeBtn.addActionListener(e -> {
+                GodModeSeeder.seedDatabase((Admin) u);
+                JOptionPane.showMessageDialog(app.getFrame(), "Database successfully seeded with 10 Users and 3 Events!");
+                // Note: The admin will need to log out and log back in, or switch tabs to see new data populate immediately
+            });
+            form.add(godModeBtn);
+        }
         
         panel.add(form);
         return panel;
