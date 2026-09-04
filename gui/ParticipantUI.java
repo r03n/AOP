@@ -13,7 +13,7 @@ public class ParticipantUI {
         panel = new JPanel(new BorderLayout(10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        String[] cols = { "ID", "Title", "Date", "Time", "Capacity" };
+        String[] cols = { "ID", "Title", "Date", "Time", "Capacity", "Organizer" };
         DefaultTableModel model = new DefaultTableModel(cols, 0) {
             @Override
             public boolean isCellEditable(int r, int c) {
@@ -23,7 +23,7 @@ public class ParticipantUI {
         JTable table = new JTable(model);
         for (Event e : p.browseEvents())
             model.addRow(new Object[] { e.getId(), e.getTitle(), e.getDate(), e.getTime(),
-                    e.getCapacity() });
+                    e.getCapacity(), e.getOrganizerName() });
 
         table.setToolTipText("Double-click an event to view details.");
         table.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -90,11 +90,11 @@ public class ParticipantUI {
 
     private void openEventDetails(MainGUI app, Event event) {
         JDialog dialog = new JDialog(app.getFrame(), "Event Details: " + event.getTitle(), true);
-        dialog.setSize(450, 350);
+        dialog.setSize(450, 390);
         dialog.setLocationRelativeTo(app.getFrame());
         dialog.setLayout(new BorderLayout(10, 10));
 
-        JPanel details = new JPanel(new GridLayout(4, 1));
+        JPanel details = new JPanel(new GridLayout(5, 1));
         details.setBorder(BorderFactory.createEmptyBorder(10, 15, 5, 15));
 
         String description = event.getDescription() != null && !event.getDescription().trim().isEmpty()
@@ -105,6 +105,8 @@ public class ParticipantUI {
         details.add(new JLabel("<html><b>Description:</b> " + description + "</html>"));
         details.add(new JLabel("<html><b>Date & Time:</b> " + event.getDate() + " @ " + event.getTime() + "</html>"));
         details.add(new JLabel("<html><b>Capacity:</b> " + event.getCapacity() + "</html>"));
+        details.add(new JLabel("<html><b>Organizer:</b> "
+                + (event.getOrganizerName() != null ? event.getOrganizerName() : "Unknown") + "</html>"));
 
         dialog.add(details, BorderLayout.NORTH);
         dialog.setVisible(true);

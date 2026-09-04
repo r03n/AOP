@@ -291,7 +291,7 @@ public class OrganizerUI {
                 "Event Details: " + title,
                 true);
 
-        dialog.setSize(500, 450);
+        dialog.setSize(500, 550);
         dialog.setLocationRelativeTo(app.getFrame());
         dialog.setLayout(new BorderLayout(10, 10));
 
@@ -316,12 +316,18 @@ public class OrganizerUI {
                 "<html><b>Capacity:</b> " + capacity + "</html>"));
 
         DefaultListModel<String> listModel = new DefaultListModel<>();
+        DefaultListModel<String> invitedModel = new DefaultListModel<>();
 
         Runnable refreshList = () -> {
             listModel.clear();
 
             for (String p : o.generateReport(eventId)) {
                 listModel.addElement(p);
+            }
+
+            invitedModel.clear();
+            for (String p : o.getInvitedParticipants(eventId)) {
+                invitedModel.addElement(p);
             }
         };
 
@@ -332,6 +338,15 @@ public class OrganizerUI {
         JScrollPane scroll = new JScrollPane(partList);
         scroll.setBorder(
                 BorderFactory.createTitledBorder("Participants"));
+
+        JList<String> invitedList = new JList<>(invitedModel);
+        JScrollPane invitedScroll = new JScrollPane(invitedList);
+        invitedScroll.setBorder(BorderFactory.createTitledBorder("Invited (Pending)"));
+        invitedScroll.setPreferredSize(new Dimension(0, 90));
+
+        JPanel listsPanel = new JPanel(new BorderLayout(0, 10));
+        listsPanel.add(scroll, BorderLayout.CENTER);
+        listsPanel.add(invitedScroll, BorderLayout.SOUTH);
 
         JPanel actions = new JPanel(
                 new FlowLayout(FlowLayout.CENTER, 10, 10));
@@ -389,7 +404,7 @@ public class OrganizerUI {
         actions.add(removeBtn);
 
         dialog.add(details, BorderLayout.NORTH);
-        dialog.add(scroll, BorderLayout.CENTER);
+        dialog.add(listsPanel, BorderLayout.CENTER);
         dialog.add(actions, BorderLayout.SOUTH);
 
         dialog.setVisible(true);

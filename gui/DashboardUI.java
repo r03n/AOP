@@ -33,6 +33,7 @@ public class DashboardUI {
 
         JButton eventsBtn = createSidebarButton("Dashboard");
         JButton profileBtn = createSidebarButton("Profile");
+        JButton passwordBtn = createSidebarButton("Change Password");
         JButton logoutBtn = createSidebarButton("Logout");
 
         sidebar.add(nameLabel);
@@ -42,6 +43,8 @@ public class DashboardUI {
         sidebar.add(eventsBtn);
         sidebar.add(Box.createRigidArea(new Dimension(0, 10)));
         sidebar.add(profileBtn);
+        sidebar.add(Box.createRigidArea(new Dimension(0, 10)));
+        sidebar.add(passwordBtn);
         sidebar.add(Box.createVerticalGlue()); 
         sidebar.add(logoutBtn);
 
@@ -53,6 +56,7 @@ public class DashboardUI {
 
         eventsBtn.addActionListener(e -> contentLayout.show(contentArea, "Events"));
         profileBtn.addActionListener(e -> contentLayout.show(contentArea, "Profile"));
+        passwordBtn.addActionListener(e -> openChangePasswordDialog(u, app));
         logoutBtn.addActionListener(e -> app.logout());
 
         mainPanel.add(sidebar, BorderLayout.WEST);
@@ -71,6 +75,33 @@ public class DashboardUI {
         btn.setBorderPainted(false);
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         return btn;
+    }
+
+    private void openChangePasswordDialog(User u, MainGUI app) {
+        JPasswordField currentF = new JPasswordField();
+        JPasswordField newF = new JPasswordField();
+        JPasswordField confirmF = new JPasswordField();
+        Object[] msg = { "Current Password:", currentF, "New Password:", newF, "Confirm New Password:", confirmF };
+
+        while (true) {
+            if (JOptionPane.showConfirmDialog(app.getFrame(), msg, "Change Password",
+                    JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
+                String newPass = new String(newF.getPassword());
+                String confirmPass = new String(confirmF.getPassword());
+                if (!newPass.equals(confirmPass)) {
+                    JOptionPane.showMessageDialog(app.getFrame(), "New passwords do not match.", "Error",
+                            JOptionPane.ERROR_MESSAGE);
+                    continue;
+                }
+                String result = u.changePassword(new String(currentF.getPassword()), newPass);
+                JOptionPane.showMessageDialog(app.getFrame(), result);
+                if (result.startsWith("Success")) {
+                    break;
+                }
+            } else {
+                break;
+            }
+        }
     }
 
     private JPanel createProfilePanel(User u, MainGUI app) {

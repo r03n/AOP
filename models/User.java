@@ -88,6 +88,7 @@ public abstract class User {
                 }
             }
         } catch (SQLException e) {
+            System.err.println("Login error: " + e.getMessage());
         } // Safe failure
         return null;
     }
@@ -119,8 +120,51 @@ public abstract class User {
             return "Success: Account created!";
 
         } catch (SQLException e) {
+            System.err.println("Registration error: " + e.getMessage());
             return "Error: Username might already exist.";
         }
+    }
+
+    // --- CHANGE PASSWORD (all roles) ---
+    public String changePassword(String currentPassword, String newPassword) {
+        if (currentPassword == null || currentPassword.isEmpty()) {
+            return "Error: Please enter your current password.";
+        }
+        if (newPassword == null || newPassword.trim().isEmpty()) {
+            return "Error: New password cannot be empty.";
+        }
+        if (newPassword.length() < 4) {
+            return "Error: New password must be at least 4 characters.";
+        }
+
+        String verifySql = "SELECT id FROM Users WHERE id = ? AND password = ?";
+        String updateSql = "UPDATE Users SET password = ? WHERE id = ?";
+
+        try (Connection conn = DatabaseManager.connect()) {
+            if (conn == null)
+                return "Error: Could not connect to database.";
+
+            try (PreparedStatement verifyStmt = conn.prepareStatement(verifySql)) {
+                verifyStmt.setInt(1, this.id);
+                verifyStmt.setString(2, currentPassword);
+                try (ResultSet rs = verifyStmt.executeQuery()) {
+                    if (!rs.next()) {
+                        return "Error: Current password is incorrect.";
+                    }
+                }
+            }
+
+            try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
+                updateStmt.setString(1, newPassword);
+                updateStmt.setInt(2, this.id);
+                if (updateStmt.executeUpdate() > 0) {
+                    return "Success: Password changed!";
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Change password error: " + e.getMessage());
+        }
+        return "Error: Could not change password.";
     }
 
     public String updateProfile(String fullName, int age, String department, String yearLevel) {
@@ -136,6 +180,7 @@ public abstract class User {
                 return "Success: Profile updated!";
             }
         } catch (SQLException e) {
+            System.err.println("Update profile error: " + e.getMessage());
         }
         return "Error updating profile.";
     }

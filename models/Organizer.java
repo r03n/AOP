@@ -24,18 +24,32 @@ public class Organizer extends User {
             pstmt.setInt(5, capacity); pstmt.setInt(6, this.id);
             pstmt.executeUpdate();
             return "Success: Event Created!";
-        } catch (SQLException e) { return "Error: Failed to create event."; }
+        } catch (SQLException e) { System.err.println("Database error: " + e.getMessage()); return "Error: Failed to create event."; }
     }
 
     public String updateEvent(int eventId, String title, String description, String date, String time, int capacity) {
+        if (capacity <= 0) {
+            return "Error: Capacity must be greater than zero.";
+        }
         String sql = "UPDATE Events SET title = ?, description = ?, event_date = ?, event_time = ?, capacity = ? WHERE id = ? AND organizer_id = ?";
         try (Connection conn = DatabaseManager.connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            // Prevent shrinking capacity below the number of participants already registered
+            try (PreparedStatement countStmt = conn.prepareStatement(
+                    "SELECT COUNT(*) FROM Registrations WHERE event_id = ?")) {
+                countStmt.setInt(1, eventId);
+                try (ResultSet rsCount = countStmt.executeQuery()) {
+                    if (rsCount.next() && rsCount.getInt(1) > capacity) {
+                        return "Error: Capacity cannot be lower than the " + rsCount.getInt(1)
+                                + " participant(s) already registered.";
+                    }
+                }
+            }
             pstmt.setString(1, title); pstmt.setString(2, description); 
             pstmt.setString(3, date); pstmt.setString(4, time);
             pstmt.setInt(5, capacity); pstmt.setInt(6, eventId); pstmt.setInt(7, this.id); 
             if (pstmt.executeUpdate() > 0) return "Success: Event updated!";
             return "Error: Event not found or unauthorized.";
-        } catch (SQLException e) { return "Error: Failed to update event."; }
+        } catch (SQLException e) { System.err.println("Database error: " + e.getMessage()); return "Error: Failed to update event."; }
     }
 
     public List<Event> viewMyEvents() {
@@ -48,7 +62,7 @@ public class Organizer extends User {
                     events.add(new Event(rs.getInt("id"), rs.getString("title"), rs.getString("description"), rs.getString("event_date"), rs.getString("event_time"), rs.getInt("capacity"), this.id));
                 }
             }
-        } catch (SQLException e) {}
+        } catch (SQLException e) { System.err.println("Database error: " + e.getMessage()); }
         return events;
     }
     
@@ -62,7 +76,7 @@ public class Organizer extends User {
             evStmt.setInt(1, eventId); evStmt.setInt(2, this.id);
             if (evStmt.executeUpdate() > 0) return "Success: Event deleted.";
             return "Error: Event not found or unauthorized.";
-        } catch (SQLException e) { return "Error deleting event."; }
+        } catch (SQLException e) { System.err.println("Database error: " + e.getMessage()); return "Error deleting event."; }
     }
 
     public List<String> generateReport(int eventId) {
@@ -73,8 +87,28 @@ public class Organizer extends User {
             try (ResultSet rs = userStmt.executeQuery()) {
                 while (rs.next()) report.add(rs.getString("username") + " (" + rs.getString("status") + ")");
             }
-        } catch (SQLException e) {}
+        } catch (SQLException e) { System.err.println("Database error: " + e.getMessage()); }
         return report;
+    }
+
+    // Show invited participants (invited but not yet registered) in the detailed event view
+    public List<String> getInvitedParticipants(int eventId) {
+        List<String> invited = new ArrayList<>();
+        String sql = "SELECT COALESCE(NULLIF(u.full_name, ''), u.username) AS name "
+                + "FROM Invites i JOIN Users u ON i.participant_id = u.id "
+                + "WHERE i.event_id = ? AND u.id NOT IN "
+                + "(SELECT participant_id FROM Registrations WHERE event_id = ?)";
+        try (Connection conn = DatabaseManager.connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, eventId);
+            pstmt.setInt(2, eventId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next())
+                    invited.add(rs.getString("name"));
+            }
+        } catch (SQLException e) {
+            System.err.println("Database error: " + e.getMessage());
+        }
+        return invited;
     }
 
     public String forceParticipantUpdate(int eventId, String username, boolean isAdding) {
@@ -95,7 +129,7 @@ public class Organizer extends User {
                         try (PreparedStatement ins = conn.prepareStatement("INSERT INTO Registrations(participant_id, event_id, status) VALUES(?, ?, 'Force Added')")) {
                             ins.setInt(1, pId); ins.setInt(2, eventId); ins.executeUpdate();
                             return "Success: Added " + username;
-                        } catch (SQLException e) { return "Error: User is likely already registered."; }
+                        } catch (SQLException e) { System.err.println("Database error: " + e.getMessage()); return "Error: User is likely already registered."; }
                     } else {
                         try (PreparedStatement del = conn.prepareStatement("DELETE FROM Registrations WHERE participant_id = ? AND event_id = ?")) {
                             del.setInt(1, pId); del.setInt(2, eventId);
@@ -105,7 +139,7 @@ public class Organizer extends User {
                     }
                 }
             }
-        } catch (SQLException e) {}
+        } catch (SQLException e) { System.err.println("Database error: " + e.getMessage()); }
         return "Error: User not found or update failed.";
     }
 
@@ -115,6 +149,6 @@ public class Organizer extends User {
             pstmt.setInt(1, eventId); pstmt.setString(2, username);
             if (pstmt.executeUpdate() > 0) return "Success: Invited " + username;
             return "Error: Participant not found.";
-        } catch (SQLException e) { return "Error: Could not invite."; }
+        } catch (SQLException e) { System.err.println("Database error: " + e.getMessage()); return "Error: Could not invite."; }
     }
 }

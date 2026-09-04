@@ -19,16 +19,20 @@ public class Participant extends User {
 
     public List<Event> browseEvents() {
         List<Event> events = new ArrayList<>();
-        String sql = "SELECT * FROM Events";
+        // Show the organizer's full name (falling back to username) instead of their raw ID
+        String sql = "SELECT e.id, e.title, e.description, e.event_date, e.event_time, e.capacity, "
+                + "COALESCE(NULLIF(u.full_name, ''), u.username) AS organizer "
+                + "FROM Events e LEFT JOIN Users u ON e.organizer_id = u.id";
         try (Connection conn = DatabaseManager.connect();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
                 events.add(new Event(rs.getInt("id"), rs.getString("title"), rs.getString("description"),
                         rs.getString("event_date"), rs.getString("event_time"), rs.getInt("capacity"),
-                        rs.getInt("organizer_id")));
+                        rs.getString("organizer")));
             }
         } catch (SQLException e) {
+            System.err.println("Browse events error: " + e.getMessage());
         }
         return events;
     }
@@ -80,6 +84,7 @@ public class Participant extends User {
             return "Success: Registered for Event ID " + eventId;
 
         } catch (SQLException e) {
+            System.err.println("Registration error: " + e.getMessage());
             return "Error processing registration.";
         }
     }
@@ -111,6 +116,7 @@ public class Participant extends User {
             return "Success: Unregistered from Event ID " + eventId;
 
         } catch (SQLException e) {
+            System.err.println("Unregistration error: " + e.getMessage());
             return "Error processing unregistration.";
         }
     }
@@ -126,6 +132,7 @@ public class Participant extends User {
                 }
             }
         } catch (SQLException e) {
+            System.err.println("Check notifications error: " + e.getMessage());
         }
         return notifs;
     }

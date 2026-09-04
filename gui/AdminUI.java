@@ -184,6 +184,7 @@ public class AdminUI {
             }
         };
         JTable table = new JTable(model);
+        table.setToolTipText("Double-click a user to view their full profile.");
 
         Runnable refreshTable = () -> {
             model.setRowCount(0);
@@ -191,6 +192,31 @@ public class AdminUI {
                 model.addRow(u);
         };
         refreshTable.run();
+
+        table.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    int row = table.getSelectedRow();
+                    if (row != -1) {
+                        String username = (String) table.getValueAt(row, 1);
+                        String[] profile = a.viewUserProfile(username);
+                        if (profile != null) {
+                            String msg = "<html><b>Username:</b> " + profile[0]
+                                    + "<br><b>Role:</b> " + profile[1]
+                                    + "<br><b>Full Name:</b> " + profile[2]
+                                    + "<br><b>Age:</b> " + profile[3]
+                                    + "<br><b>Department:</b> " + profile[4]
+                                    + "<br><b>Year Level:</b> " + profile[5] + "</html>";
+                            JOptionPane.showMessageDialog(app.getFrame(), msg, "User Profile",
+                                    JOptionPane.PLAIN_MESSAGE);
+                        } else {
+                            JOptionPane.showMessageDialog(app.getFrame(), "Could not load profile.");
+                        }
+                    }
+                }
+            }
+        });
 
         JPanel bot = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
         JButton createBtn = new JButton("Create User");
@@ -262,7 +288,7 @@ public class AdminUI {
     private void openEventReport(MainGUI app, Admin a, int eventId, String title, String description, String date,
             String time, int capacity) {
         JDialog dialog = new JDialog(app.getFrame(), "Admin Management: " + title, true);
-        dialog.setSize(450, 400);
+        dialog.setSize(450, 500);
         dialog.setLocationRelativeTo(app.getFrame());
         dialog.setLayout(new BorderLayout(10, 10));
 
@@ -276,10 +302,14 @@ public class AdminUI {
         details.add(new JLabel("<html><b>Capacity:</b> " + capacity + "</html>"));
 
         DefaultListModel<String> listModel = new DefaultListModel<>();
+        DefaultListModel<String> invitedModel = new DefaultListModel<>();
         Runnable refreshList = () -> {
             listModel.clear();
             for (String p : a.generateReport(eventId))
                 listModel.addElement(p);
+            invitedModel.clear();
+            for (String p : a.getInvitedParticipants(eventId))
+                invitedModel.addElement(p);
         };
         refreshList.run();
 
@@ -287,14 +317,25 @@ public class AdminUI {
         JScrollPane scroll = new JScrollPane(partList);
         scroll.setBorder(BorderFactory.createTitledBorder("Participants"));
 
+        JList<String> invitedList = new JList<>(invitedModel);
+        JScrollPane invitedScroll = new JScrollPane(invitedList);
+        invitedScroll.setBorder(BorderFactory.createTitledBorder("Invited (Pending)"));
+        invitedScroll.setPreferredSize(new Dimension(0, 90));
+
+        JPanel listsPanel = new JPanel(new BorderLayout(0, 10));
+        listsPanel.add(scroll, BorderLayout.CENTER);
+        listsPanel.add(invitedScroll, BorderLayout.SOUTH);
+
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
         JButton inviteBtn = new JButton("Invite Participant");
         JButton removeBtn = new JButton("Remove Selected");
 
         inviteBtn.addActionListener(e -> {
             String uname = JOptionPane.showInputDialog(dialog, "Username to invite:");
-            if (uname != null && !uname.trim().isEmpty())
+            if (uname != null && !uname.trim().isEmpty()) {
                 JOptionPane.showMessageDialog(dialog, a.inviteParticipant(eventId, uname.trim()));
+                refreshList.run();
+            }
         });
 
         removeBtn.addActionListener(e -> {
@@ -313,7 +354,7 @@ public class AdminUI {
         actions.add(inviteBtn);
         actions.add(removeBtn);
         dialog.add(details, BorderLayout.NORTH);
-        dialog.add(scroll, BorderLayout.CENTER);
+        dialog.add(listsPanel, BorderLayout.CENTER);
         dialog.add(actions, BorderLayout.SOUTH);
         dialog.setVisible(true);
     }

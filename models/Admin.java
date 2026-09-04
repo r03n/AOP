@@ -30,14 +30,29 @@ public class Admin extends User {
             pstmt.executeUpdate();
             return "Success: Event Created!";
         } catch (SQLException e) {
+            System.err.println("Database error: " + e.getMessage());
             return "Error: Failed to create event.";
         }
     }
 
     public String updateAnyEvent(int eventId, String title, String description, String date, String time,
             int capacity) {
+        if (capacity <= 0) {
+            return "Error: Capacity must be greater than zero.";
+        }
         String sql = "UPDATE Events SET title = ?, description = ?, event_date = ?, event_time = ?, capacity = ? WHERE id = ?";
         try (Connection conn = DatabaseManager.connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            // Prevent shrinking capacity below the number of participants already registered
+            try (PreparedStatement countStmt = conn.prepareStatement(
+                    "SELECT COUNT(*) FROM Registrations WHERE event_id = ?")) {
+                countStmt.setInt(1, eventId);
+                try (ResultSet rsCount = countStmt.executeQuery()) {
+                    if (rsCount.next() && rsCount.getInt(1) > capacity) {
+                        return "Error: Capacity cannot be lower than the " + rsCount.getInt(1)
+                                + " participant(s) already registered.";
+                    }
+                }
+            }
             pstmt.setString(1, title);
             pstmt.setString(2, description);
             pstmt.setString(3, date);
@@ -47,13 +62,17 @@ public class Admin extends User {
             if (pstmt.executeUpdate() > 0)
                 return "Success: Event updated!";
         } catch (SQLException e) {
+            System.err.println("Database error: " + e.getMessage());
         }
         return "Error: Failed to update event.";
     }
 
     public List<Event> viewAllEvents() {
         List<Event> events = new ArrayList<>();
-        String sql = "SELECT e.id, e.title, e.description, e.event_date, e.event_time, e.capacity, u.username as organizer FROM Events e LEFT JOIN Users u ON e.organizer_id = u.id";
+        // Prefer the organizer's full name; fall back to username if the profile isn't filled out
+        String sql = "SELECT e.id, e.title, e.description, e.event_date, e.event_time, e.capacity, "
+                + "COALESCE(NULLIF(u.full_name, ''), u.username) AS organizer "
+                + "FROM Events e LEFT JOIN Users u ON e.organizer_id = u.id";
         try (Connection conn = DatabaseManager.connect();
                 Statement stmt = conn.createStatement();
                 ResultSet rs = stmt.executeQuery(sql)) {
@@ -63,6 +82,7 @@ public class Admin extends User {
                         rs.getString("organizer")));
             }
         } catch (SQLException e) {
+            System.err.println("View all events error: " + e.getMessage());
         }
         return events;
     }
@@ -78,6 +98,7 @@ public class Admin extends User {
             if (evStmt.executeUpdate() > 0)
                 return "Success: Event terminated.";
         } catch (SQLException e) {
+            System.err.println("Database error: " + e.getMessage());
         }
         return "Error terminating event.";
     }
@@ -93,8 +114,32 @@ public class Admin extends User {
                 users.add(new String[] { String.valueOf(rs.getInt("id")), rs.getString("username"),
                         rs.getString("role"), rs.getString("full_name") });
         } catch (SQLException e) {
+            System.err.println("Database error: " + e.getMessage());
         }
         return users;
+    }
+
+    // Show full details of a participant/user to Admin (not just the summary table row)
+    public String[] viewUserProfile(String targetUsername) {
+        String sql = "SELECT username, role, full_name, age, department, year_level FROM Users WHERE username = ?";
+        try (Connection conn = DatabaseManager.connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, targetUsername);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return new String[] {
+                            rs.getString("username"),
+                            rs.getString("role"),
+                            rs.getString("full_name") != null ? rs.getString("full_name") : "Not set",
+                            rs.getInt("age") > 0 ? String.valueOf(rs.getInt("age")) : "Not set",
+                            rs.getString("department") != null ? rs.getString("department") : "Not set",
+                            rs.getString("year_level") != null ? rs.getString("year_level") : "Not set"
+                    };
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("View user profile error: " + e.getMessage());
+        }
+        return null;
     }
 
     public String changeUserRole(String targetUsername, String newRole) {
@@ -105,6 +150,7 @@ public class Admin extends User {
             if (pstmt.executeUpdate() > 0)
                 return "Success: " + targetUsername + " is now " + newRole;
         } catch (SQLException e) {
+            System.err.println("Database error: " + e.getMessage());
         }
         return "Error updating role.";
     }
@@ -116,6 +162,7 @@ public class Admin extends User {
             if (pstmt.executeUpdate() > 0)
                 return "Success: Account purged.";
         } catch (SQLException e) {
+            System.err.println("Database error: " + e.getMessage());
         }
         return "Error deleting account.";
     }
@@ -131,8 +178,29 @@ public class Admin extends User {
                     report.add(rs.getString("full_name") + " (" + rs.getString("status") + ")");
             }
         } catch (SQLException e) {
+            System.err.println("Database error: " + e.getMessage());
         }
         return report;
+    }
+
+    // Show invited participants (invited but not yet registered) in the detailed event view
+    public List<String> getInvitedParticipants(int eventId) {
+        List<String> invited = new ArrayList<>();
+        String sql = "SELECT COALESCE(NULLIF(u.full_name, ''), u.username) AS name "
+                + "FROM Invites i JOIN Users u ON i.participant_id = u.id "
+                + "WHERE i.event_id = ? AND u.id NOT IN "
+                + "(SELECT participant_id FROM Registrations WHERE event_id = ?)";
+        try (Connection conn = DatabaseManager.connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, eventId);
+            pstmt.setInt(2, eventId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next())
+                    invited.add(rs.getString("name"));
+            }
+        } catch (SQLException e) {
+            System.err.println("Get invited participants error: " + e.getMessage());
+        }
+        return invited;
     }
 
     public String forceParticipantUpdate(int eventId, String fullName, boolean isAdding) {
@@ -172,6 +240,7 @@ public class Admin extends User {
 
                             return "Success: Added " + fullName;
                         } catch (SQLException e) {
+                            System.err.println("Database error: " + e.getMessage());
                             return "Error: User is likely already registered.";
                         }
 
@@ -192,6 +261,7 @@ public class Admin extends User {
                 }
             }
         } catch (SQLException e) {
+            System.err.println("Database error: " + e.getMessage());
         }
 
         return "Error: User not found or update failed.";
@@ -207,6 +277,7 @@ public class Admin extends User {
                 return "Success: Invited " + username;
             return "Error: Participant not found.";
         } catch (SQLException e) {
+            System.err.println("Database error: " + e.getMessage());
             return "Error: Could not invite.";
         }
     }

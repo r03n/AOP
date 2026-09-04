@@ -28,15 +28,15 @@ Password: admin123
 ## To-Do
 - [x] Fix Directory Tree
 - [x] Add TIME to Events
-- [ ] Show Organizer's Name in Events (Instead of username)
+- [x] Show Organizer's Name in Events (Instead of username)
 - [x] Show Participant's Name in Events (Instead of username)
 - [x] Fix Detailed Event View
 - [x] Move Description from Table View to Detailed Event View
-- [ ] Show Invited Participants in Detailed Event View
+- [x] Show Invited Participants in Detailed Event View
 - [ ] Improve Edit Event View
 - [x] Show Detailed Event View when Double Clicked by Participant
-- [ ] Show full details of Participant to ADMIN
+- [x] Show full details of Participant to ADMIN
 - [x] Disallow Participant from Registering to Events if PROFILE is NOT filled out
 - [x] Allow Participant to BACKOUT / UNREGISTER from Events
-- [ ] Add CHANGE PASSWORD Option to all Users
-- [ ] Recheck ALL EXCEPTIONS
+- [x] Add CHANGE PASSWORD Option to all Users
+- [x] Recheck ALL EXCEPTIONS
