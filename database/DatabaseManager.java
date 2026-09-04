@@ -7,19 +7,13 @@ import java.sql.Statement;
 import java.io.File;
 
 public class DatabaseManager {
-    // --- UPDATED: Changed path to the database folder and renamed to aop.db ---
-    private static final String DB_FOLDER = "database";
-    private static final String DB_NAME = DB_FOLDER + File.separator + "aop.db";
+    // --- UPDATED: Changed path to root directory ---
+    private static final String DB_NAME = "aop.db";
     private static final String URL = "jdbc:sqlite:" + DB_NAME;
 
     public static Connection connect() {
         Connection conn = null;
         try { 
-            // Ensure the directory exists before trying to connect
-            File directory = new File(DB_FOLDER);
-            if (!directory.exists()) {
-                directory.mkdirs();
-            }
             conn = DriverManager.getConnection(URL); 
         } catch (SQLException e) { 
             System.err.println("Connection failed: " + e.getMessage()); 
@@ -29,12 +23,6 @@ public class DatabaseManager {
 
     public static void initializeDatabase() {
         try {
-            // Ensure directory exists before initialization 
-            File directory = new File(DB_FOLDER);
-            if (!directory.exists()) {
-                directory.mkdirs();
-            }
-            
             // If the database already exists, skip creating tables
             if (new File(DB_NAME).exists()) return;
 
