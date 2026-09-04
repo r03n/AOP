@@ -1,4 +1,5 @@
 package models;
+
 import java.sql.*;
 
 import database.DatabaseManager;
@@ -19,18 +20,39 @@ public abstract class User {
         this.role = role;
     }
 
-    // ABSTRACTION & POLYMORPHISM: Forces all subclasses to implement their own version
+    // ABSTRACTION & POLYMORPHISM: Forces all subclasses to implement their own
+    // version
     public abstract String getRoleDescription();
 
     // Getters
-    public int getId() { return id; }
-    public String getUsername() { return username; }
-    public String getRole() { return role; }
-    public String getFullName() { return fullName; }
-    public int getAge() { return age; }
-    public String getDepartment() { return department; }
-    public String getYearLevel() { return yearLevel; }
-    
+    public int getId() {
+        return id;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public String getFullName() {
+        return fullName;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public String getDepartment() {
+        return department;
+    }
+
+    public String getYearLevel() {
+        return yearLevel;
+    }
+
     public void setProfileData(String fullName, int age, String department, String yearLevel) {
         this.fullName = fullName;
         this.age = age;
@@ -43,45 +65,78 @@ public abstract class User {
         String sql = "SELECT * FROM Users WHERE username = ? AND password = ?";
         // Exception Handling: try-with-resources safely closes DB connections
         try (Connection conn = DatabaseManager.connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, username); pstmt.setString(2, password);
+            pstmt.setString(1, username);
+            pstmt.setString(2, password);
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
                     int id = rs.getInt("id");
                     String role = rs.getString("role");
                     User u = null;
-                    
+
                     // Instantiating the specific subclass based on role
-                    if (role.equals("Admin")) u = new Admin(id, username);
-                    else if (role.equals("Organizer")) u = new Organizer(id, username);
-                    else if (role.equals("Participant")) u = new Participant(id, username);
-                    
-                    if (u != null) u.setProfileData(rs.getString("full_name"), rs.getInt("age"), rs.getString("department"), rs.getString("year_level"));
+                    if (role.equals("Admin"))
+                        u = new Admin(id, username);
+                    else if (role.equals("Organizer"))
+                        u = new Organizer(id, username);
+                    else if (role.equals("Participant"))
+                        u = new Participant(id, username);
+
+                    if (u != null)
+                        u.setProfileData(rs.getString("full_name"), rs.getInt("age"), rs.getString("department"),
+                                rs.getString("year_level"));
                     return u;
                 }
             }
-        } catch (SQLException e) {} // Safe failure
+        } catch (SQLException e) {
+        } // Safe failure
         return null;
     }
 
     public static String register(String username, String password, String role) {
+
+        if (username == null || username.trim().isEmpty()) {
+            return "Error: Username cannot be empty.";
+        }
+
+        if (password == null || password.trim().isEmpty()) {
+            return "Error: Password cannot be empty.";
+        }
+
+        if (role == null || role.trim().isEmpty()) {
+            return "Error: Role cannot be empty.";
+        }
+
         String sql = "INSERT INTO Users (username, password, role) VALUES (?, ?, ?)";
-        try (Connection conn = DatabaseManager.connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, username); pstmt.setString(2, password); pstmt.setString(3, role);
+
+        try (Connection conn = DatabaseManager.connect();
+                PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, username.trim());
+            pstmt.setString(2, password);
+            pstmt.setString(3, role);
+
             pstmt.executeUpdate();
             return "Success: Account created!";
-        } catch (SQLException e) { return "Error: Username might already exist."; }
+
+        } catch (SQLException e) {
+            return "Error: Username might already exist.";
+        }
     }
 
     public String updateProfile(String fullName, int age, String department, String yearLevel) {
         String sql = "UPDATE Users SET full_name = ?, age = ?, department = ?, year_level = ? WHERE id = ?";
         try (Connection conn = DatabaseManager.connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, fullName); pstmt.setInt(2, age);
-            pstmt.setString(3, department); pstmt.setString(4, yearLevel); pstmt.setInt(5, this.id);
+            pstmt.setString(1, fullName);
+            pstmt.setInt(2, age);
+            pstmt.setString(3, department);
+            pstmt.setString(4, yearLevel);
+            pstmt.setInt(5, this.id);
             if (pstmt.executeUpdate() > 0) {
                 setProfileData(fullName, age, department, yearLevel);
                 return "Success: Profile updated!";
             }
-        } catch (SQLException e) {}
+        } catch (SQLException e) {
+        }
         return "Error updating profile.";
     }
 }

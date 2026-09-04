@@ -13,7 +13,7 @@ public class ParticipantUI {
         panel = new JPanel(new BorderLayout(10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        String[] cols = { "ID", "Title", "Description", "Date", "Time", "Capacity" };
+        String[] cols = { "ID", "Title", "Date", "Time", "Capacity" };
         DefaultTableModel model = new DefaultTableModel(cols, 0) {
             @Override
             public boolean isCellEditable(int r, int c) {
@@ -22,8 +22,27 @@ public class ParticipantUI {
         };
         JTable table = new JTable(model);
         for (Event e : p.browseEvents())
-            model.addRow(new Object[] { e.getId(), e.getTitle(), e.getDescription(), e.getDate(), e.getTime(),
+            model.addRow(new Object[] { e.getId(), e.getTitle(), e.getDate(), e.getTime(),
                     e.getCapacity() });
+
+        table.setToolTipText("Double-click an event to view details.");
+        table.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    int row = table.getSelectedRow();
+                    if (row != -1) {
+                        int eventId = (int) table.getValueAt(row, 0);
+                        for (Event event : p.browseEvents()) {
+                            if (event.getId() == eventId) {
+                                openEventDetails(app, event);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        });
 
         JButton regBtn = new JButton("Register for Selected Event");
         regBtn.addActionListener(e -> {
@@ -67,6 +86,28 @@ public class ParticipantUI {
         bot.add(notifPanel, BorderLayout.CENTER);
 
         panel.add(bot, BorderLayout.SOUTH);
+    }
+
+    private void openEventDetails(MainGUI app, Event event) {
+        JDialog dialog = new JDialog(app.getFrame(), "Event Details: " + event.getTitle(), true);
+        dialog.setSize(450, 350);
+        dialog.setLocationRelativeTo(app.getFrame());
+        dialog.setLayout(new BorderLayout(10, 10));
+
+        JPanel details = new JPanel(new GridLayout(4, 1));
+        details.setBorder(BorderFactory.createEmptyBorder(10, 15, 5, 15));
+
+        String description = event.getDescription() != null && !event.getDescription().trim().isEmpty()
+                ? event.getDescription()
+                : "No description provided.";
+
+        details.add(new JLabel("<html><b>Title:</b> " + event.getTitle() + "</html>"));
+        details.add(new JLabel("<html><b>Description:</b> " + description + "</html>"));
+        details.add(new JLabel("<html><b>Date & Time:</b> " + event.getDate() + " @ " + event.getTime() + "</html>"));
+        details.add(new JLabel("<html><b>Capacity:</b> " + event.getCapacity() + "</html>"));
+
+        dialog.add(details, BorderLayout.NORTH);
+        dialog.setVisible(true);
     }
 
     public JPanel getPanel() {
