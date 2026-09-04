@@ -84,7 +84,9 @@ public class OrganizerUI {
 
         createBtn.addActionListener(e -> {
             JTextField titleF = new JTextField();
-            JTextArea descF = new JTextArea(3, 20);
+            JTextArea descF = new JTextArea(5, 25);
+            descF.setLineWrap(true);
+            descF.setWrapStyleWord(true);
             JTextField capF = new JTextField();
 
             DateTimePicker dtPicker = new DateTimePicker(null, null);
@@ -181,8 +183,10 @@ public class OrganizerUI {
                     selectedEvent.getDescription() != null
                             ? selectedEvent.getDescription()
                             : "",
-                    3,
-                    20);
+                    5,
+                    25);
+            descF.setLineWrap(true);
+            descF.setWrapStyleWord(true);
 
             JTextField capF = new JTextField(
                     String.valueOf(selectedEvent.getCapacity()));
@@ -295,25 +299,29 @@ public class OrganizerUI {
         dialog.setLocationRelativeTo(app.getFrame());
         dialog.setLayout(new BorderLayout(10, 10));
 
-        JPanel details = new JPanel(new GridLayout(4, 1, 5, 5));
-        details.setBorder(
-                BorderFactory.createEmptyBorder(10, 15, 5, 15));
+        JPanel topDetails = new JPanel(new GridLayout(3, 1, 5, 5));
+        topDetails.add(new JLabel("<html><b>Title:</b> " + title + "</html>"));
+        topDetails.add(new JLabel("<html><b>Date & Time:</b> " + date + " @ " + time + "</html>"));
+        topDetails.add(new JLabel("<html><b>Capacity:</b> " + capacity + "</html>"));
 
-        String safeDescription = description != null && !description.trim().isEmpty()
-                ? description
-                : "No description provided.";
+        String safeDescription = description != null && !description.trim().isEmpty() 
+            ? description : "No description provided.";
+        
+        JTextArea descArea = new JTextArea(safeDescription);
+        descArea.setWrapStyleWord(true);
+        descArea.setLineWrap(true);
+        descArea.setEditable(false);
+        descArea.setOpaque(false);
+        descArea.setFont(new JLabel().getFont()); 
+        
+        JScrollPane descScroll = new JScrollPane(descArea);
+        descScroll.setBorder(BorderFactory.createTitledBorder("Description"));
+        descScroll.setPreferredSize(new Dimension(0, 80)); 
 
-        details.add(new JLabel(
-                "<html><b>Title:</b> " + title + "</html>"));
-
-        details.add(new JLabel(
-                "<html><b>Description:</b> " + safeDescription + "</html>"));
-
-        details.add(new JLabel(
-                "<html><b>Date & Time:</b> " + date + " @ " + time + "</html>"));
-
-        details.add(new JLabel(
-                "<html><b>Capacity:</b> " + capacity + "</html>"));
+        JPanel details = new JPanel(new BorderLayout(5, 5));
+        details.setBorder(BorderFactory.createEmptyBorder(10, 15, 5, 15));
+        details.add(topDetails, BorderLayout.NORTH);
+        details.add(descScroll, BorderLayout.CENTER);
 
         DefaultListModel<String> listModel = new DefaultListModel<>();
         DefaultListModel<String> invitedModel = new DefaultListModel<>();

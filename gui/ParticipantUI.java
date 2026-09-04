@@ -90,25 +90,36 @@ public class ParticipantUI {
 
     private void openEventDetails(MainGUI app, Event event) {
         JDialog dialog = new JDialog(app.getFrame(), "Event Details: " + event.getTitle(), true);
-        dialog.setSize(450, 390);
+        dialog.setSize(450, 400); 
         dialog.setLocationRelativeTo(app.getFrame());
         dialog.setLayout(new BorderLayout(10, 10));
 
-        JPanel details = new JPanel(new GridLayout(5, 1));
-        details.setBorder(BorderFactory.createEmptyBorder(10, 15, 5, 15));
-
-        String description = event.getDescription() != null && !event.getDescription().trim().isEmpty()
-                ? event.getDescription()
-                : "No description provided.";
-
-        details.add(new JLabel("<html><b>Title:</b> " + event.getTitle() + "</html>"));
-        details.add(new JLabel("<html><b>Description:</b> " + description + "</html>"));
-        details.add(new JLabel("<html><b>Date & Time:</b> " + event.getDate() + " @ " + event.getTime() + "</html>"));
-        details.add(new JLabel("<html><b>Capacity:</b> " + event.getCapacity() + "</html>"));
-        details.add(new JLabel("<html><b>Organizer:</b> "
+        JPanel topDetails = new JPanel(new GridLayout(4, 1, 5, 5));
+        topDetails.add(new JLabel("<html><b>Title:</b> " + event.getTitle() + "</html>"));
+        topDetails.add(new JLabel("<html><b>Date & Time:</b> " + event.getDate() + " @ " + event.getTime() + "</html>"));
+        topDetails.add(new JLabel("<html><b>Capacity:</b> " + event.getCapacity() + "</html>"));
+        topDetails.add(new JLabel("<html><b>Organizer:</b> "
                 + (event.getOrganizerName() != null ? event.getOrganizerName() : "Unknown") + "</html>"));
 
-        dialog.add(details, BorderLayout.NORTH);
+        String description = event.getDescription() != null && !event.getDescription().trim().isEmpty()
+                ? event.getDescription() : "No description provided.";
+
+        JTextArea descArea = new JTextArea(description);
+        descArea.setWrapStyleWord(true);
+        descArea.setLineWrap(true);
+        descArea.setEditable(false);
+        descArea.setOpaque(false);
+        descArea.setFont(new JLabel().getFont());
+        
+        JScrollPane descScroll = new JScrollPane(descArea);
+        descScroll.setBorder(BorderFactory.createTitledBorder("Description"));
+
+        JPanel detailsPanel = new JPanel(new BorderLayout(5, 10));
+        detailsPanel.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
+        detailsPanel.add(topDetails, BorderLayout.NORTH);
+        detailsPanel.add(descScroll, BorderLayout.CENTER);
+
+        dialog.add(detailsPanel, BorderLayout.CENTER);
         dialog.setVisible(true);
     }
 
