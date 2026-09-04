@@ -39,5 +39,5 @@ Password: admin123
 - [x] Allow Participant to BACKOUT / UNREGISTER from Events
 - [x] Add CHANGE PASSWORD Option to all Users
 - [x] Recheck ALL EXCEPTIONS
-- [ ] Improve Create/Edit Event View
-- [ ] Improve Detailed Event View
+- [x] Improve Create/Edit Event View
+- [x] Improve Detailed Event View

@@ -35,9 +35,11 @@ public class DateTimePicker {
         JPanel timePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 0));
         timePanel.add(hourBox); timePanel.add(new JLabel(":")); timePanel.add(minBox); timePanel.add(new JLabel(" ")); timePanel.add(ampmBox);
 
-        mainPanel = new JPanel(new GridLayout(2, 2, 5, 5));
-        mainPanel.add(new JLabel("Date:")); mainPanel.add(datePanel);
-        mainPanel.add(new JLabel("Time:")); mainPanel.add(timePanel);
+        // Combined into a single row without separate labels
+        mainPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        mainPanel.add(datePanel);
+        mainPanel.add(Box.createRigidArea(new Dimension(15, 0))); // Space between date and time
+        mainPanel.add(timePanel);
     }
 
     public JPanel getPanel() { return mainPanel; }

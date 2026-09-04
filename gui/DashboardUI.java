@@ -33,7 +33,6 @@ public class DashboardUI {
 
         JButton eventsBtn = createSidebarButton("Dashboard");
         JButton profileBtn = createSidebarButton("Profile");
-        // Removed passwordBtn from sidebar here
         JButton logoutBtn = createSidebarButton("Logout");
 
         sidebar.add(nameLabel);
@@ -75,9 +74,9 @@ public class DashboardUI {
     }
 
     private void openChangePasswordDialog(User u, MainGUI app) {
-        JPasswordField currentF = new JPasswordField();
-        JPasswordField newF = new JPasswordField();
-        JPasswordField confirmF = new JPasswordField();
+        JPasswordField currentF = new JPasswordField(20);
+        JPasswordField newF = new JPasswordField(20);
+        JPasswordField confirmF = new JPasswordField(20);
         Object[] msg = { "Current Password:", currentF, "New Password:", newF, "Confirm New Password:", confirmF };
 
         while (true) {
@@ -103,24 +102,23 @@ public class DashboardUI {
 
     private JPanel createProfilePanel(User u, MainGUI app) {
         JPanel panel = new JPanel(new GridBagLayout());
-        // Increased rows to 6 to properly fit the layout
         JPanel form = new JPanel(new GridLayout(6, 2, 10, 15)); 
         form.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createTitledBorder(null, "Edit Profile", 0, 0, new Font("SansSerif", Font.BOLD, 16)),
             BorderFactory.createEmptyBorder(20, 20, 20, 20)
         ));
 
-        JTextField nameF = new JTextField(u.getFullName() != null ? u.getFullName() : "");
-        JTextField ageF = new JTextField(u.getAge() > 0 ? String.valueOf(u.getAge()) : "");
-        JTextField deptF = new JTextField(u.getDepartment() != null ? u.getDepartment() : "");
-        JTextField yearF = new JTextField(u.getYearLevel() != null ? u.getYearLevel() : "");
+        // Increased length of textboxes by specifying column width (25)
+        JTextField nameF = new JTextField(u.getFullName() != null ? u.getFullName() : "", 25);
+        JTextField ageF = new JTextField(u.getAge() > 0 ? String.valueOf(u.getAge()) : "", 25);
+        JTextField deptF = new JTextField(u.getDepartment() != null ? u.getDepartment() : "", 25);
+        JTextField yearF = new JTextField(u.getYearLevel() != null ? u.getYearLevel() : "", 25);
 
         form.add(new JLabel("Full Name:")); form.add(nameF);
         form.add(new JLabel("Age:")); form.add(ageF);
         form.add(new JLabel("Department:")); form.add(deptF);
         form.add(new JLabel("Year Level:")); form.add(yearF);
 
-        // Added Change Password button here
         JButton changePassBtn = new JButton("Change Password");
         changePassBtn.setFocusPainted(false);
         changePassBtn.addActionListener(e -> openChangePasswordDialog(u, app));
@@ -140,7 +138,6 @@ public class DashboardUI {
             }
         });
 
-        // Placed both buttons side-by-side at the bottom of the grid
         form.add(changePassBtn); 
         form.add(saveBtn);
         

@@ -11,10 +11,12 @@ public class MainGUI {
     private CardLayout cardLayout;
 
     public MainGUI() {
+        setupModernLookAndFeel();
+
         DatabaseManager.initializeDatabase();
         frame = new JFrame("Academic Organization Platform");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(950, 600); 
+        frame.setSize(1000, 650); // Increased default size for better spacing
         frame.setLocationRelativeTo(null); 
 
         cardLayout = new CardLayout();
@@ -25,6 +27,34 @@ public class MainGUI {
 
         frame.add(cardPanel);
         frame.setVisible(true);
+    }
+
+    private void setupModernLookAndFeel() {
+        try {
+            // Attempt to load FlatLaf for a completely flat, modern design
+            UIManager.setLookAndFeel("com.formdev.flatlaf.FlatLightLaf");
+            UIManager.put("Button.arc", 8); // Rounded corners
+            UIManager.put("Component.arc", 8);
+            UIManager.put("TextComponent.arc", 8);
+        } catch (Exception ex) {
+            // Fallback to the Native System Look and Feel if FlatLaf isn't in the classpath
+            try {
+                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        // Apply a modern Sans-Serif font globally
+        Font modernFont = new Font("Segoe UI", Font.PLAIN, 14);
+        java.util.Enumeration<Object> keys = UIManager.getDefaults().keys();
+        while (keys.hasMoreElements()) {
+            Object key = keys.nextElement();
+            Object value = UIManager.get(key);
+            if (value instanceof javax.swing.plaf.FontUIResource) {
+                UIManager.put(key, new javax.swing.plaf.FontUIResource(modernFont));
+            }
+        }
     }
 
     public void loginUser(User u) {
